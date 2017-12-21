@@ -1,5 +1,6 @@
 
 const { resolve } = require('path');
+const { spawn } = require('child_process');
 
 function getSettings () {
     const defaultsDeep = require('lodash/defaultsDeep');
@@ -16,6 +17,20 @@ function getSettings () {
     return customSettings;
 }
 
+function gulp (args, cwd, callback) {
+    console.log('Start running gulp', args.join(' '), 'in', cwd);
+    var cmd = process.platform === 'win32' ? 'gulp.cmd' : 'gulp';
+    var child = spawn(cmd, args, {
+        cwd: cwd,
+        stdio: 'inherit'
+    });
+    child.on('exit', function () {
+        console.log('Finish running gulp in', cwd);
+        return callback();
+    });
+}
+
 module.exports = {
-    getSettings
+    getSettings,
+    gulp,
 };
