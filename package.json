@@ -1,0 +1,29 @@
+{
+  "name": "workflows",
+  "version": "1.0.0",
+  "description": "Workflows for creator team.",
+  "main": "index.js",
+  "scripts": {
+    "tag": "node src/tag"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cocos-creator/workflows.git"
+  },
+  "author": "CocosCreator",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cocos-creator/workflows/issues"
+  },
+  "homepage": "https://github.com/cocos-creator/workflows#readme",
+  "dependencies": {
+    "async": "^2.6.0",
+    "fs-extra": "^5.0.0",
+    "lodash": "^4.17.4"
+  },
+  "workflows_settings": {
+    "paths": {
+      "fireball": "../fireball"
+    }
+  }
+}
