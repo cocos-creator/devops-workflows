@@ -3,6 +3,7 @@
 const { join } = require('path');
 const series = require('async/series');
 const program = require('commander');
+const { promisify } = require('util');
 
 const utils = require('./utils');
 const git = require('./git');
@@ -14,21 +15,34 @@ program
     .parse(process.argv);
 
 function addRepoTag (tag, path, callback) {
-    series([
+
+    let exec = promisify((cmds, path, options, callback) => {
+        if (!callback) {
+            callback = options;
+            options = undefined;
+        }
+        git.exec(cmds, path, callback, options);
+    });
+
+    (async () => {
+        var gaTag = tag.replace(/-.+$/, '');
+        var devTag = gaTag + '-dev'; // keep only one developing version
+        var isDevTag = gaTag !== tag;
+        if (isDevTag) {
+            tag = devTag;
+        }
         // delete the same tag on remote before push
         // (in case the final publish is failed and hotfix again)
-        next => {
-            git.exec(['push', remote, ':' + tag], path, next, { autoRetry: true });
-        },
+        await exec(['push', remote, ':' + gaTag], path, { autoRetry: true });
+        await exec(['push', remote, ':' + devTag], path, { autoRetry: true });
+
         // replace the tag to reference the most recent commit
-        next => {
-            git.exec(['tag', '-f', tag], path, next);
-        },
+        await exec(['tag', '-f', tag], path);
+
         // push the tag to the remote origin
-        next => {
-            git.exec(['push', remote, tag], path, next, { autoRetry: true });
-        }
-    ], callback);
+        await exec(['push', remote, tag], path, { autoRetry: true });
+
+    })().then(callback, callback);
 }
 
 function doTagFireballRepo (path, tagName, callback) {
