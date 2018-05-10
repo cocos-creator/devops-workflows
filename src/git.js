@@ -26,7 +26,7 @@ function exec (cmdArgs, path, cb, options) {
         console.log(Chalk.yellow(`connection timeout/error: ${Path.basename(path)}`));
         treekill(child.pid);
         if (autoRetry && !offbranch) {
-            console.log(Chalk.yellow(`restart "${cmdArgs[0]}": ${Path.basename(repo)}`));
+            console.log(Chalk.yellow(`restart "${cmdArgs[0]}": ${Path.basename(path)}`));
             exec(cmdArgs, path, cb, options); // Object.assign({}, options, { autoRetry: false })
         }
         else {
