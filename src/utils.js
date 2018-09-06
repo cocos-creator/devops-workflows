@@ -30,7 +30,16 @@ function gulp (args, cwd, callback) {
     });
 }
 
+function tooltip (text) {
+    process.stdout.clearLine();
+    process.stdout.cursorTo(0);
+    process.stdout.write('' + (text || ''));
+}
+tooltip.clear = function () { tooltip(); };
+tooltip.pin = function () { process.stdout.write('\n'); };
+
 module.exports = {
     getSettings,
     gulp,
+    tooltip
 };

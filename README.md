@@ -49,3 +49,19 @@ npm run tag
 ```bash
 npm run tag -- --path path/to/repo
 ```
+
+**Deploy Product**
+
+该命令会将文件上传到 FTP
+
+```bash
+npm run upload -- path/to/file --dest TestBuilds/xxx.zip --user Admin --password 123456 --host 127.0.0.1
+```
+
+如果希望在上传前先从 FTP 移除和目标文件版本号相同，只是补丁版本不同的相同文件，可以在最后加上一个参数 --archieve-same-version
+
+```bash
+npm run upload -- ....  --archieve-same-version
+```
+
+这样一来相关文件就会被移动到 ../Histroy 目录中。
