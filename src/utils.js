@@ -6,15 +6,24 @@ function getSettings () {
     const defaultsDeep = require('lodash/defaultsDeep');
     const mapValues = require('lodash/mapValues');
     const defaultSettings = require('../package.json').workflows_settings;
-    const customSettings = require('../custom_settings');
+    let settings;
+    try {
+        settings = require('../settings');
+    }
+    catch (e) {}
 
+    if (settings) {
     // inherit settings
-    defaultsDeep(customSettings, defaultSettings);
+        defaultsDeep(settings, defaultSettings);
+    }
+    else {
+        settings = defaultSettings;
+    }
 
     // resolve paths
-    customSettings.paths = mapValues(customSettings.paths, x => resolve('../custom_settings', x));
+    settings.paths = mapValues(settings.paths, x => resolve('../settings', x));
 
-    return customSettings;
+    return settings;
 }
 
 function gulp (args, cwd, callback) {

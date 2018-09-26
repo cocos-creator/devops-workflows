@@ -32,7 +32,7 @@ npm install
 ### Settings
 
 Open `package.json` and check "workflows_settings" for default settings.
-If you need, place your settings in `custom_settings.js` to overwrite the default settings.
+If you need, place your settings in `settings.js` to overwrite the default settings. See `settings.js.sample` for details.
 
 ## Commands
 

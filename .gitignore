@@ -4,3 +4,4 @@ Thumbs.db
 /.idea/
 /node_modules/
 /npm-debug.log
+/settings.js
