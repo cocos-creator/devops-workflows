@@ -4,7 +4,6 @@ const { dirname, basename, join, isAbsolute } = require('path');
 const program = require('commander');
 const ftp = require('ftp');
 const pick = require('lodash/pick');
-var Chalk = require('chalk');
 
 const { tooltip } = require('./utils');
 

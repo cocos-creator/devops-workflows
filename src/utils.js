@@ -13,7 +13,7 @@ function getSettings () {
     catch (e) {}
 
     if (settings) {
-    // inherit settings
+        // inherit settings
         defaultsDeep(settings, defaultSettings);
     }
     else {
@@ -28,8 +28,7 @@ function getSettings () {
 
 function gulp (args, cwd, callback) {
     console.log('Start running gulp', args.join(' '), 'in', cwd);
-    var cmd = process.platform === 'win32' ? 'gulp.cmd' : 'gulp';
-    var child = spawn(cmd, args, {
+    var child = spawn(getCmd('gulp'), args, {
         cwd: cwd,
         stdio: 'inherit'
     });
@@ -39,16 +38,29 @@ function gulp (args, cwd, callback) {
     });
 }
 
+function getCmd (cmd) {
+    return process.platform === 'win32' ? (cmd + '.cmd') : cmd;
+}
+
 function tooltip (text) {
     process.stdout.clearLine();
     process.stdout.cursorTo(0);
     process.stdout.write('' + (text || ''));
 }
 tooltip.clear = function () { tooltip(); };
-tooltip.pin = function () { process.stdout.write('\n'); };
+tooltip.pin = function (text) {
+    if (text) {
+        tooltip.clear();
+        console.log(text);
+    }
+    else {
+        process.stdout.write('\n');
+    }
+};
 
 module.exports = {
     getSettings,
+    getCmd,
     gulp,
-    tooltip
+    tooltip,
 };

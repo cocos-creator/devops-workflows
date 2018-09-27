@@ -65,3 +65,11 @@ npm run upload -- ....  --archieve-same-version
 ```
 
 这样一来相关文件就会被移动到 ../Histroy 目录中。
+
+**Download**
+
+该命令会将文件下载到指定位置，并且解压
+
+```bash
+npm run download -- --url https://github.com/cocos-creator/hello-world/archive/v1.10.zip --dir ./test
+```
