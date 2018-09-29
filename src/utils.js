@@ -58,9 +58,16 @@ tooltip.pin = function (text) {
     }
 };
 
+function sleep (ms) {
+    return new Promise(resolve => {
+        setTimeout(resolve, ms);
+    });
+}
+
 module.exports = {
     getSettings,
     getCmd,
     gulp,
     tooltip,
+    sleep,
 };
