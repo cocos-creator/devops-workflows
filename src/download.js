@@ -99,7 +99,7 @@ async function download(url, dir, retryTimes = 5) {
         process.exit(1);
     }
 
-    let files = await globby(['*', '!__MACOSX'], { cwd: rootFolder, onlyFiles: false });
+    let files = await globby(['*', '!__MACOSX'], { cwd: rootFolder, onlyFiles: false, dot: true });
     for (let i = 0; i < files.length; ++i) {
         let filename = files[i];
         await fse.move(join(rootFolder, filename), join(dir, filename), { overwrite: true });
