@@ -1,6 +1,7 @@
 
 const Download = require('download');
 const { join } = require('path');
+const { parse } = require('url');
 const del = require('del');
 const globby = require('globby');
 const fse = require('fs-extra');
@@ -19,7 +20,8 @@ program
     .parse(process.argv);
 
 async function download(url, dir, retryTimes = 5) {
-    let proxy = httpProxies.length > 0 ? httpProxies[0] : undefined;
+    let isLan = parse(url).hostname.startsWith('192.168.');
+    let proxy = (!isLan && httpProxies.length > 0) ? httpProxies[0] : undefined;
 
     if (proxy) {
         tooltip(Chalk.grey(`downloading "${Chalk.white(url)}" via proxy ${proxy}`));
