@@ -1,15 +1,17 @@
 
 // operations on local git repo
 // copied from https://github.com/cocos-creator/fireball/blob/35a063610da706d4a157c35a7e622f1d1fa1f181/utils/libs/git.js
+'use strict';
 
 var Path = require('path');
 var Chalk = require('chalk');
 var Spawn = require('child_process').spawn;
 var treekill = require('tree-kill');
 
-function exec (cmdArgs, path, cb, options) {
-    var timeout = (options && options.timeout) || 500000;
+function exec(cmdArgs, path, cb, options) {
+    var timeout = (options && options.timeout) || 600000;
     var autoRetry = options && options.autoRetry;
+    var autoKill = !options || (options.autoKill !== false);
 
     console.log(Chalk.yellow('git ' + cmdArgs.join(' ')), 'in', Chalk.magenta(path));
 
@@ -56,12 +58,15 @@ function exec (cmdArgs, path, cb, options) {
 
         var text = data.toString();
 
-        // git checkout
-        if (text.indexOf('Your local changes to the following files would be overwritten by checkout') !== -1) {
-            process.stderr.write(Chalk.yellow(text));
-            clearTimeout(timeout);
-            aborted = true;
-            return cb(new Error(text));
+        // git checkout ("overwritten by checkout")
+        // git pull ("overwritten by merge")
+        if (text.indexOf('Your local changes to the following files would be overwritten by') !== -1) {
+            if (!autoKill) {
+                process.stderr.write(Chalk.yellow(text));
+                clearTimeout(timerId);
+                aborted = true;
+                return cb(new Error(text));
+            }
         }
 
         if (
