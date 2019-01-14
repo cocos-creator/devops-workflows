@@ -71,6 +71,7 @@ async function download(url, dir, retryTimes = 5) {
 }
 
 // download zip and extract it
+// see http://Cocos.quickconnect.to/oo/r/458125396699783206
 (async function () {
     let url = program.url;
     let dir = program.dir;
@@ -86,25 +87,25 @@ async function download(url, dir, retryTimes = 5) {
 
     // strip directory manually
 
-    let folders = await globby(['*', '!__MACOSX'], { cwd: tmpDir, onlyFiles: false });
-    if (folders.length === 0) {
+    let copyFrom = tmpDir;
+    let rootFiles = await globby(['*', '!__MACOSX'], { cwd: tmpDir, onlyFiles: false });
+    if (rootFiles.length === 0) {
         console.error(`No file extracted from ${url}`);
         process.exit(1);
     }
-    else if (folders.length > 1) {
-        console.error(`More than 1 files extracted from ${url}, files: ${folders}`);
-        process.exit(1);
-    }
-    let rootFolder = join(tmpDir, folders[0]);
-    if (!(await fse.stat(rootFolder)).isDirectory()) {
-        console.error(`The file "${rootFolder}" extracted from ${url} is not a directory.`);
-        process.exit(1);
+    else if (rootFiles.length === 1) {
+        let rootFile = join(tmpDir, rootFiles[0]);
+        if ((await fse.stat(rootFile)).isDirectory()) {
+            // 已经自带一个跟目录，剔除这个根目录
+            console.log(`Remove duplicated directory "${rootFile}" extracted from ${url}.`);
+            copyFrom = rootFile;
+        }
     }
 
-    let files = await globby(['*', '!__MACOSX'], { cwd: rootFolder, onlyFiles: false, dot: true });
+    let files = await globby(['*', '!__MACOSX'], { cwd: copyFrom, onlyFiles: false, dot: true });
     for (let i = 0; i < files.length; ++i) {
         let filename = files[i];
-        await fse.move(join(rootFolder, filename), join(dir, filename), { overwrite: true });
+        await fse.move(join(copyFrom, filename), join(dir, filename), { overwrite: true });
     }
 
     // purge
