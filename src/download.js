@@ -1,6 +1,6 @@
 
 const Download = require('download');
-const { join } = require('path');
+const { join, basename } = require('path');
 const { parse } = require('url');
 const del = require('del');
 const globby = require('globby');
@@ -9,6 +9,7 @@ const program = require('commander');
 const Chalk = require('chalk');
 
 const { getSettings, tooltip, sleep } = require('./utils');
+const unzip = require('./unzip');
 
 const TempDir = '.downloading';
 
@@ -33,7 +34,7 @@ async function download(url, dir, retryTimes = 5) {
     try {
         await Download(url, dir, {
             mode: '755',
-            extract: true,
+            extract: false,     // 文件如果太大，不能用 node.js 解压，不然各种奇葩 bug
             strip: 0,
             proxy
         });
@@ -82,8 +83,24 @@ async function download(url, dir, retryTimes = 5) {
 
     let tmpDir = join(dir, TempDir);
 
+    // clear
     await del(tmpDir, { force: true });
+
+    // download
     await download(url, tmpDir);
+
+    // unzip
+    let zipFile = join(tmpDir, basename(url));
+    tooltip(Chalk.grey(`unzipping "${Chalk.white(zipFile)}"`));
+    try {
+        await unzip(zipFile, tmpDir);
+    }
+    catch (err) {
+        tooltip.pin();
+        throw err;
+    }
+    await del(zipFile, { force: true });
+    tooltip.clear();
 
     // strip directory manually
 
