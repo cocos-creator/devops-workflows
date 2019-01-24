@@ -33,6 +33,7 @@ async function download(url, dir, retryTimes = 5) {
 
     try {
         await Download(url, dir, {
+            filename: basename(url),
             mode: '755',
             extract: false,     // 文件如果太大，不能用 node.js 解压，不然各种奇葩 bug
             strip: 0,
