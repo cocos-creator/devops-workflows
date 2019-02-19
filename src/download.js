@@ -18,6 +18,7 @@ var httpProxies = getSettings().httpProxies;
 program
     .option('--url <url>')
     .option('--dir <path>')
+    .option('--reserveZipRootDir')
     .parse(process.argv);
 
 async function download(url, dir, retryTimes = 5) {
@@ -111,7 +112,7 @@ async function download(url, dir, retryTimes = 5) {
         console.error(`No file extracted from ${url}`);
         process.exit(1);
     }
-    else if (rootFiles.length === 1) {
+    else if (rootFiles.length === 1 && !program.reserveZipRootDir) {
         let rootFile = join(tmpDir, rootFiles[0]);
         if ((await fse.stat(rootFile)).isDirectory()) {
             // 已经自带一个跟目录，剔除这个根目录
