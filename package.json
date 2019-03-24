@@ -6,7 +6,8 @@
   "scripts": {
     "tag": "node src/tag",
     "upload": "node src/deploy upload",
-    "download": "node src/download"
+    "download": "node src/download",
+    "new-branch": "node src/github/new-branch"
   },
   "repository": {
     "type": "git",
@@ -19,6 +20,8 @@
   },
   "homepage": "https://github.com/cocos-creator/workflows#readme",
   "dependencies": {
+    "@octokit/graphql": "^2.0.2",
+    "@octokit/rest": "^16.20.0",
     "async": "^2.6.0",
     "chalk": "^2.3.0",
     "commander": "^2.13.0",
@@ -28,7 +31,7 @@
     "fs-extra": "^5.0.0",
     "ftp": "^0.3.10",
     "globby": "^8.0.1",
-    "lodash": "^4.17.4",
+    "lodash": "^4.17.11",
     "tree-kill": "^1.2.0"
   },
   "workflows_settings": {
@@ -36,6 +39,11 @@
       "fireball": "../fireball",
       "cocos2d-x-lite": "../cocos2d-x-lite"
     },
-    "httpProxies": []
+    "httpProxies": [],
+    "creatorGithub": {
+      "token": "",
+      "owner": "cocos-creator",
+      "ownerPackages": "cocos-creator-packages"
+    }
   }
 }

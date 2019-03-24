@@ -1,5 +1,6 @@
 module.exports = {
-    // Place your settings here to overwrite the default settings
+    // Place your settings here to overwrite the default settings which
+    // defined in package.json ["workflows_settings"]
     paths: {
     },
 };

@@ -73,3 +73,19 @@ npm run upload -- ....  --archieve-same-version
 ```bash
 npm run download -- --url https://github.com/cocos-creator/hello-world/archive/v1.10.zip --dir ./test
 ```
+
+**New Branch**
+
+该命令会在 GitHub 仓库中创建新分支
+
+```bash
+npm run new-branch -- -b oldBranch,newBranch
+```
+
+步骤逻辑如下
+
+ - 遍历所有开发仓库
+   - 创建新分支
+ - 在主仓库的新分支上更新 package.json 中的分支名
+
+该命令全程操作都通过 GitHub API 进行，不会影响到本地 git 仓库。
