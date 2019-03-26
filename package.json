@@ -7,7 +7,8 @@
     "tag": "node src/tag",
     "upload": "node src/deploy upload",
     "download": "node src/download",
-    "new-branch": "node src/github/new-branch"
+    "new-branch": "node src/github/new-branch",
+    "list-pr": "node src/github/list-pr"
   },
   "repository": {
     "type": "git",

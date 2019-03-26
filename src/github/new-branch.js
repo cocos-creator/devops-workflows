@@ -1,15 +1,14 @@
 
 const chalk = require('chalk');
 
-const { Which, request, querySha, createBranch, commit } = require('./github');
-const utils = require('../utils');
-const settings = utils.getSettings();
+const { Which, querySha, createBranch, commit } = require('./github');
+const { getFireball, getMainPackage, parseDependRepos } = require('./utils');
 
 const program = require('commander');
 
 (function initArgs () {
     program
-        .option('-b, --baseAndNewBranch <baseBranch,newBranch>', 'create new branches', val => val.split(','))
+        .option('-b, --baseAndNewBranch <baseBranch,newBranch>', 'Create new branches', val => val.split(','))
         .parse(process.argv);
     // console.log(program.baseAndNewBranch);
     program.baseBranch = program.baseAndNewBranch[0];
@@ -37,61 +36,6 @@ process.on('unhandledRejection', (reason) => {
     console.error(chalk.red(reason.stack || reason));
 });
 
-async function getMainPackage (which) {
-    let res = await request(`query ($owner: String!, $repo: String!, $packageExp: String!) {
-  repository(owner: $owner, name: $repo) {
-    object(expression: $packageExp) {
-      ... on Blob {
-        text
-      }
-    }
-  }
-}`, {
-        repo: which.repo,
-        packageExp: `${which.branch}:package.json`,
-    });
-
-    let repository = res.repository;
-    if (!repository) {
-        throw `Failed to access ${which.repo}, please check permission of the token`;
-    }
-    let object = repository.object;
-    if (!object) {
-        throw `Failed to load package.json from ${which}, please check the branch`;
-    }
-
-    return object.text;
-}
-
-// get repos from package.json {
-//   builtin
-//   hosts
-//   templates (github.com)
-// }
-function parseDependRepos (package) {
-    const { builtin, hosts, templates } = package;
-    const { creatorGithub: { owner, ownerPackages} } = settings;
-
-    function parseRepos (repos, owner) {
-        return repos.map(entry => {
-            let [repo, branch] = entry.split('#');
-            return new Which(owner, repo, branch);
-        });
-    }
-    let repos = [];
-    repos = repos.concat(parseRepos(builtin, ownerPackages));
-    repos = repos.concat(parseRepos(hosts, owner));
-
-    for (let key in templates) {
-        let url = templates[key];
-        let entry = Which.fromDownloadUrl(url);
-        if (entry) {
-            repos.push(entry);
-        }
-    }
-
-    return repos;
-}
 
 function bumpDependRepos (packageContent, packageJson) {
     const { builtin, hosts, templates } = packageJson;
@@ -129,7 +73,7 @@ function bumpDependRepos (packageContent, packageJson) {
 
 (async function () {
 
-    let fireball = new Which(settings.creatorGithub.owner, 'fireball', program.baseBranch);
+    let fireball = getFireball(program.baseBranch);
 
     // parse repos
 
