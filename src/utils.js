@@ -1,6 +1,7 @@
 
 const { resolve } = require('path');
 const { spawn } = require('child_process');
+const readline = require('readline');
 
 function getSettings () {
     const defaultsDeep = require('lodash/defaultsDeep');
@@ -43,8 +44,7 @@ function getCmd (cmd) {
 }
 
 function tooltip (text) {
-    process.stdout.clearLine();
-    process.stdout.cursorTo(0);
+    readline.cursorTo(process.stdout, 0);
     process.stdout.write('' + (text || ''));
 }
 tooltip.clear = function () { tooltip(); };
