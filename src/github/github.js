@@ -86,8 +86,8 @@ async function createBranch (which, sha) {
         if (e.message === 'Reference already exists') {
             return false;
         }
-        else {
-            throw e;
+        else if (e.message === 'Not Found' || e.message === 'Bad credentials') {
+            throw `Failed to access ${which.repo}, please check permission of the token`;
         }
     }
     return true;

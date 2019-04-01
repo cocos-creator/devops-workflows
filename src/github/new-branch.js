@@ -73,24 +73,32 @@ function bumpDependRepos (packageContent, packageJson) {
 
 (async function () {
 
-    let fireball = getFireball(program.baseBranch);
+    let fireballBase = getFireball(program.baseBranch);
+    let fireballNew = getFireball(program.newBranch);
+
+    // create new fireball branch
+
+    let sha = await querySha(fireballBase);
+    let created = await createBranch(fireballNew, sha);
+    if (!created) {
+        console.warn(chalk.yellow(`Branch (${fireballNew}) already exists. Parse dependencies based on new branch.`));
+    }
 
     // parse repos
 
-    let packageContent = await getMainPackage(fireball);
+    let packageContent = await getMainPackage(fireballNew);
     let packageJson = JSON.parse(packageContent);
     let repos = parseDependRepos(packageJson);
 
-    // create branches
+    // create depend branches
 
     for (let which of repos) {
         let sha = await querySha(which);
         which.branch = program.newBranch;
         let created = await createBranch(which, sha);
         if (!created) {
-            console.warn(chalk.yellow(`Branch already exists. Update the reference if you need.`));
+            console.warn(chalk.yellow(`Branch (${which}) already exists. Update the reference if you need.`));
         }
-
     }
 
     // update package.json
@@ -99,9 +107,8 @@ function bumpDependRepos (packageContent, packageJson) {
 
     // commit package.json
 
-    fireball.branch = program.newBranch;
-    let commitMsg = `Switch branches to ${program.newBranch}`;
-    await commit(fireball, 'package.json', packageContent, commitMsg);
+    let commitMsg = `Switch dependencies to ${program.newBranch}`;
+    await commit(fireballNew, 'package.json', packageContent, commitMsg);
 
     console.log(`Finished create branch`);
 })();
