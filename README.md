@@ -89,3 +89,12 @@ npm run new-branch -- -b oldBranch,newBranch
  - 在主仓库的新分支上更新 package.json 中的分支名
 
 该命令全程操作都通过 GitHub API 进行，不会影响到本地 git 仓库。
+
+**List PR**
+
+```bash
+npm run list-pr -- branch1 [...branch2]
+```
+
+该命令会显示所有 GitHub 上需要合并的 PR，可以输入任意多个分支，最后一个分支将用于解析依赖的仓库
+该命令全程操作都通过 GitHub API 进行，不会影响到本地 git 仓库。

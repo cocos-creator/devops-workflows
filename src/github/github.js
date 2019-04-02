@@ -32,7 +32,8 @@ const restClient = new Octokit({
 
 //
 
-async function request (query, variables) {
+const maxRetryCount = 3;
+async function request (query, variables, retry) {
     let res;
     try {
         // console.log(query);
@@ -40,7 +41,14 @@ async function request (query, variables) {
         // console.log(res);
     }
     catch (e) {
-        console.error(e.message);
+        console.error(`${e.message}. Status: ${e.status}.`);
+        if (e.message.includes('ETIMEDOUT')) {
+            retry = retry || 0;
+            if (++retry < maxRetryCount) {
+                console.log(`    retry (${retry}/${maxRetryCount}) ...`);
+                return request(query, variables, retry + 1);
+            }
+        }
         console.error('  Request failed:', e.request);
         throw e;
     }
@@ -209,9 +217,13 @@ class Which {
             branch: this.branch,
         };
     }
-    toDownloadUrl () {
-        return `https://github.com/${this.owner}/${this.repo}/archive/${this.branch}.zip`;
+    get url () {
+        return `https://github.com/${this.owner}/${this.repo}`;
     }
+    toDownloadUrl () {
+        return `${this.url}/archive/${this.branch}.zip`;
+    }
+
     static fromDownloadUrl (url) {
         let match = url.match(downloadUrlRE);
         if (match) {

@@ -59,9 +59,14 @@ tooltip.pin = function (text) {
 };
 
 function sleep (ms) {
-    return new Promise(resolve => {
-        setTimeout(resolve, ms);
-    });
+    if (ms) {
+        return new Promise(resolve => {
+            setTimeout(resolve, ms);
+        });
+    }
+    else {
+        return Promise.resolve();
+    }
 }
 
 module.exports = {
