@@ -3,8 +3,7 @@ const chalk = require('chalk');
 const _ = require('lodash');
 
 const utils = require('../utils');
-const settings = utils.getSettings();
-const { Which, request, querySha, createBranch, commit } = require('./github');
+const { Which, requestFromAllPages } = require('./github');
 const { getFireball, getMainPackage, parseDependRepos } = require('./utils');
 
 const { DataToMarkdown, MarkdownToHTML } = require('./list-pr-output');
@@ -38,20 +37,14 @@ function canMerge (node) {
 }
 
 async function queryPepo (which, baseBranches, output) {
-    const ITEM_PER_PAGE = 20;
-    const taskName = `querying pull requests of ${which.owner}/${which.repo}`;
-    console.log(`  Start ${taskName}...`);
-    const timerName = '  Finished ' + taskName;
-    console.time(timerName);
+    const endTimer = utils.timer(`query pull requests of ${which}`);
 
-    let prs = [];
-
-    let query = `query pr ($owner: String!, $repo: String!, $after: String, $first: Int!) {
+    let query = `query pr ($owner: String!, $repo: String!, PageVarDef) {
   repository(owner: $owner, name: $repo) {
-    pullRequests (after: $after, first: $first, states: OPEN, orderBy: {
+    pullRequests (states: OPEN, orderBy: {
       direction: ASC,
       field: CREATED_AT
-    }) {
+    }, PageVar) {
       nodes {
         title
         baseRefName
@@ -67,10 +60,7 @@ async function queryPepo (which, baseBranches, output) {
         }
         updatedAt
       }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
+      PageRes
     }
   }
 }
@@ -78,39 +68,25 @@ async function queryPepo (which, baseBranches, output) {
     let variables = {
         owner: which.owner,
         repo: which.repo,
-        first: ITEM_PER_PAGE,
-        after: undefined,
     };
-    for (;;) {
-        let res = await request(query, variables);
+    let prs = await requestFromAllPages(query, variables, res => {
         let repository = res.repository;
         if (!repository) {
             throw `Failed to access ${which.repo}, please check permission of the token`;
         }
-        let { nodes, pageInfo: { hasNextPage, endCursor } } = repository.pullRequests;
-
-        nodes = _(nodes)
-            .filter(canMerge)
-            .filter(x => baseBranches.includes(x.baseRefName))
-            .sortBy('baseRefName')
-            .value();
-
-        // console.log(nodes);
-        prs = prs.concat(nodes);
-
-        if (!hasNextPage) {
-            break;
-        }
-        console.log(`    querying next page...`);
-        variables.after = endCursor;
-    }
+        return repository.pullRequests;
+    });
+    prs = _(prs)
+        .filter(canMerge)
+        .filter(x => baseBranches.includes(x.baseRefName))
+        .sortBy('baseRefName')
+        .value();
 
     if (prs.length > 0) {
         output.write({ repo: which, prs });
     }
 
-    console.timeEnd(timerName);
-    // console.log(`  Finished querying pull requests from ${which.owner}/${which.repo}...`);
+    endTimer();
 }
 
 //

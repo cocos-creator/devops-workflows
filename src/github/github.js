@@ -55,6 +55,36 @@ async function request (query, variables, retry) {
     return res;
 }
 
+async function requestFromAllPages (query, variables, getConnection) {
+    const ITEM_PER_PAGE = 20;
+
+    let allNodes = [];
+
+    query = query
+        .replace('PageRes', `pageInfo {\n  hasNextPage\n  endCursor\n}`)
+        .replace('PageVarDef', `$after: String, $first: Int!`)
+        .replace('PageVar', `after: $after, first: $first`);
+
+    variables.first = ITEM_PER_PAGE;
+    variables.after = undefined;
+
+    for (;;) {
+        let res = await request(query, variables);
+        let { nodes, pageInfo: { hasNextPage, endCursor } } = getConnection(res);
+        allNodes = allNodes.concat(nodes);
+
+        if (!hasNextPage) {
+            break;
+        }
+        console.log(`    querying next page...`);
+        variables.after = endCursor;
+    }
+
+    return allNodes;
+}
+
+
+
 async function querySha (which) {
     let variables = which.toJSON();
     variables.qualifiedName = `refs/heads/${which.branch}`;
@@ -101,6 +131,7 @@ async function createBranch (which, sha) {
     return true;
 }
 
+// TODO - replace with https://developer.github.com/v3/repos/contents/#update-a-file
 async function commit (which, url, content, message) {
     console.log(`committing content to ${which} ${url}`);
 
@@ -208,7 +239,12 @@ class Which {
         this.branch = branch;
     }
     toString () {
-        return `${this.owner}/${this.repo}/${this.branch}`;
+        if (this.branch) {
+            return `${this.owner}/${this.repo}/${this.branch}`;
+        }
+        else {
+            return `${this.owner}/${this.repo}`;
+        }
     }
     toJSON () {
         return {
@@ -238,6 +274,7 @@ class Which {
 module.exports = {
     Which,
     request,
+    requestFromAllPages,
     querySha,
     createBranch,
     commit,

@@ -69,10 +69,20 @@ function sleep (ms) {
     }
 }
 
+function timer (taskName) {
+    console.log(`  Starting ${taskName}...`);
+    const timerName = `  Finished ${taskName}. Elapsed time`;
+    console.time(timerName);
+    return function endTimer () {
+        console.timeEnd(timerName);
+    };
+}
+
 module.exports = {
     getSettings,
     getCmd,
     gulp,
     tooltip,
     sleep,
+    timer,
 };
