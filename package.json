@@ -8,7 +8,8 @@
     "upload": "node src/deploy upload",
     "download": "node src/download",
     "new-branch": "node src/github/new-branch",
-    "list-pr": "node src/github/list-pr"
+    "list-pr": "node src/github/list-pr",
+    "sync-branch": "node src/github/sync-branch"
   },
   "repository": {
     "type": "git",
@@ -22,6 +23,7 @@
   "homepage": "https://github.com/cocos-creator/workflows#readme",
   "dependencies": {
     "@octokit/graphql": "^2.0.2",
+    "@octokit/plugin-throttling": "^2.4.0",
     "@octokit/rest": "^16.20.0",
     "async": "^2.6.0",
     "chalk": "^2.3.0",
@@ -34,6 +36,7 @@
     "github-markdown-css": "^3.0.1",
     "globby": "^8.0.1",
     "lodash": "^4.17.11",
+    "semver": "^6.0.0",
     "showdown": "^1.9.0",
     "tree-kill": "^1.2.0"
   },

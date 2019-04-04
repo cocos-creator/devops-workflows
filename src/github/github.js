@@ -23,11 +23,27 @@ const graphql = require('@octokit/graphql').defaults({
 });
 
 // init rest
+//   see: https://github.com/octokit/rest.js
 
-const Octokit = require('@octokit/rest');
+const Octokit = require('@octokit/rest')
+    .plugin(require('@octokit/plugin-throttling'));
 const restClient = new Octokit({
     auth,
     userAgent: ua,
+    throttle: {
+        onRateLimit (retryAfter, options) {
+            restClient.log.warn(`Request quota exhausted for request ${options.method} ${options.url}`);
+
+            if (options.request.retryCount === 0) { // only retries once
+                console.log(`Retrying after ${retryAfter} seconds!`);
+                return true;
+            }
+        },
+        onAbuseLimit (retryAfter, options) {
+            // does not retry, only logs a warning
+            restClient.log.warn(`Abuse detected for request ${options.method} ${options.url}`)
+        }
+    }
 });
 
 //
@@ -129,6 +145,59 @@ async function createBranch (which, sha) {
         }
     }
     return true;
+}
+
+async function mergeBranch (which, base, head) {
+    // console.log(`merging branch of ${which.owner}/${which.repo}/${head} into ${base}`);
+    try {
+        const res = await restClient.repos.merge({
+            owner: which.owner,
+            repo: which.repo,
+            base,
+            head,
+            commit_message: `Sync branch ${head} to ${base}`,
+        });
+        // console.log(res);
+        if (res.status === 204) {
+            // base already contains the head, nothing to merge
+            return mergeBranch.Noop;
+        }
+        else {
+            // merged
+            return mergeBranch.Merged;
+        }
+    }
+    catch (e) {
+        if (e.status === 409) {
+            // conflict
+            return mergeBranch.Conflict;
+        }
+        throw e;
+    }
+}
+
+mergeBranch.Merged = new Object();
+mergeBranch.Conflict = new Object();
+mergeBranch.Noop = new Object();
+
+async function compareBranches (which, base, head) {
+    // console.log(`merging branch of ${which.owner}/${which.repo}/${head} into ${base}`);
+    try {
+        const res = await restClient.repos.compareCommits({
+            owner: which.owner,
+            repo: which.repo,
+            base,
+            head,
+        });
+        // res.data.status === 'behind|diverged|ahead';
+        return res.data.status;
+    }
+    catch (e) {
+        if (e.status === 404) {
+            console.error(`Branch ${base} or ${head} not in ${which}`);
+        }
+        throw e;
+    }
 }
 
 // TODO - replace with https://developer.github.com/v3/repos/contents/#update-a-file
@@ -278,4 +347,6 @@ module.exports = {
     querySha,
     createBranch,
     commit,
+    mergeBranch,
+    compareBranches,
 };

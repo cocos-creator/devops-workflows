@@ -74,6 +74,10 @@ npm run upload -- ....  --archieve-same-version
 npm run download -- --url https://github.com/cocos-creator/hello-world/archive/v1.10.zip --dir ./test
 ```
 
+### GitHub Commands
+
+以下命令全程操作都通过 GitHub API 远程进行，不会影响到本地 git 仓库。
+
 **New Branch**
 
 该命令会在 GitHub 仓库中创建新分支
@@ -88,8 +92,6 @@ npm run new-branch -- -b oldBranch,newBranch
    - 创建新分支
  - 在主仓库的新分支上更新 package.json 中的分支名
 
-该命令全程操作都通过 GitHub API 进行，不会影响到本地 git 仓库。
-
 **List PR**
 
 ```bash
@@ -97,4 +99,11 @@ npm run list-pr -- branch1 [...branch2]
 ```
 
 该命令会显示所有 GitHub 上需要合并的 PR，可以输入任意多个分支，最后一个分支将用于解析依赖的仓库
-该命令全程操作都通过 GitHub API 进行，不会影响到本地 git 仓库。
+
+**Sync Branch**
+
+```bash
+npm run sync-branch
+```
+
+该命令会自动同步所有 GitHub 上的所有开发分支，需要同步的仓库将从 fireball 最新若干个分支中的 package.json 收集而来。
