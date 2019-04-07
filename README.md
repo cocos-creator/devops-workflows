@@ -76,21 +76,21 @@ npm run download -- --url https://github.com/cocos-creator/hello-world/archive/v
 
 ### GitHub Commands
 
-以下命令全程操作都通过 GitHub API 远程进行，不会影响到本地 git 仓库。
+以下命令全程操作都通过 GitHub API 远程进行，不会影响到本地 git 仓库。所有操作会批量在 fireball 主仓库、2d-x 仓库和 22 个子仓库中进行。
 
 **New Branch**
 
-该命令会在 GitHub 仓库中创建新分支
+该命令会在所有仓库中创建新分支
 
 ```bash
 npm run new-branch -- -b oldBranch,newBranch
 ```
 
-步骤逻辑如下
+步骤如下
 
- - 遍历所有开发仓库
+ - 遍历所有仓库
    - 创建新分支
- - 在主仓库的新分支上更新 package.json 中的分支名
+ - 更新 package.json 中的依赖分支并且提交到主仓库的新分支上
 
 **List PR**
 
@@ -98,7 +98,7 @@ npm run new-branch -- -b oldBranch,newBranch
 npm run list-pr -- branch1 [...branch2]
 ```
 
-该命令会显示所有 GitHub 上需要合并的 PR，可以输入任意多个分支，最后一个分支将用于解析依赖的仓库
+该命令会显示所有 GitHub 上需要合并的 PR，可以输入任意多个分支，最后一个分支将用于解析依赖的仓库。结果将在浏览器中显示。
 
 **Sync Branch**
 
@@ -106,15 +106,16 @@ npm run list-pr -- branch1 [...branch2]
 npm run sync-branch
 ```
 
-该命令会自动同步所有 GitHub 上的所有开发分支，需要同步的仓库将从 fireball 最新若干个分支中的 package.json 收集而来。
+该命令会自动同步所有 GitHub 上的所有开发分支（按版本顺序依次合并改动），需要同步的仓库将从 fireball 最新若干个分支中的 package.json 收集而来。
 
 **Delete Branch**
 
 ```bash
-npm run delete-branch -b branch [--df] [--du]
+npm run delete-branch -- -b branch [--df] [--du]
 ```
 
 该命令会删除 GitHub 仓库上的指定分支，需要同步的仓库将从 fireball 最新若干个分支中的 package.json 收集而来。
-'--df' 命令用于强制删除功能分支
-'--du' 命令用于强制删除未合并的分支
+ - '--df' 命令用于强制删除功能分支
+ - '--du' 命令用于强制删除未合并的分支
+
 分支删除后，将会打上 tag 用于标记位置。如果该分支有未合并的 PR，删除分支后将会自动还原 PR，并且进行相应回复。
