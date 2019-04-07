@@ -1,7 +1,6 @@
 
-const defaults = require('lodash/defaults');
+const { basename } = require('path');
 const utils = require('../utils');
-const { dirname, basename } = require('path');
 
 // read token
 
@@ -49,11 +48,11 @@ const restClient = new Octokit({
 //
 
 const maxRetryCount = 3;
-async function request (query, variables, retry) {
+async function request (cmd, variables, retry) {
     let res;
     try {
-        // console.log(query);
-        res = await graphql(query, variables);
+        // console.log(cmd);
+        res = await graphql(cmd, variables);
         // console.log(res);
     }
     catch (e) {
@@ -62,7 +61,7 @@ async function request (query, variables, retry) {
             retry = retry || 0;
             if (++retry < maxRetryCount) {
                 console.log(`    retry (${retry}/${maxRetryCount}) ...`);
-                return request(query, variables, retry + 1);
+                return request(cmd, variables, retry + 1);
             }
         }
         console.error('  Request failed:', e.request);
@@ -99,12 +98,10 @@ async function requestFromAllPages (query, variables, getConnection) {
     return allNodes;
 }
 
-
-
 async function querySha (which) {
     let variables = which.toJSON();
     variables.qualifiedName = `refs/heads/${which.branch}`;
-    console.log(`querying sha on ${which}`);
+    console.log(`    querying sha of '${which}'`);
     let res = await request(`query ($owner: String!, $repo: String!, $qualifiedName: String!) {
   repository(owner: $owner, name: $repo) {
     ref (qualifiedName: $qualifiedName) {
@@ -119,22 +116,57 @@ async function querySha (which) {
     if (!res) {
         throw `Failed to access ${which}`;
     }
+    if (!res.repository.ref) {
+        // branch does not exist
+        return null;
+    }
     return res.repository.ref.target.oid;
 }
 
-async function createBranch (which, sha) {
-    console.log(`creating branch ${which}`);
+async function queryBranches (which) {
+    // const endTimer = utils.timer(`  query branches of ${which}`);
+
+    let query = `
+query branches ($owner: String!, $repo: String!, PageVarDef) {
+  repository(owner: $owner, name: $repo) {
+    refs(refPrefix: "refs/heads/", direction: DESC, PageVar) {
+      nodes {
+        name
+        target {
+          oid
+        }
+      }
+      PageRes
+    }
+  }
+}`;
+    let variables = {
+        owner: which.owner,
+        repo: which.repo,
+    };
+    let res = await requestFromAllPages(query, variables, res => {
+        let repository = res.repository;
+        if (!repository) {
+            throw `Failed to access ${which.repo}, please check permission of the token`;
+        }
+        return repository.refs;
+    });
+
+    res = res.filter(x => x.name !== 'gh-pages');
+
+    // endTimer();
+    return res;
+}
+
+async function createRef (which, ref, sha) {
     try {
-        // let res = await restClient.request(`POST /repos/${which.owner}/${which.repo}/git/refs`, {
-        //     ref: `refs/heads/${which.branch}`,
-        //     sha: sha
-        // });
-        await restClient.git.createRef({
+        let res = await restClient.git.createRef({
             owner: which.owner,
             repo: which.repo,
-            ref: `refs/heads/${which.branch}`,
+            ref,
             sha,
         });
+        // console.log(res);
     }
     catch (e) {
         if (e.message === 'Reference already exists') {
@@ -143,8 +175,21 @@ async function createBranch (which, sha) {
         else if (e.message === 'Not Found' || e.message === 'Bad credentials') {
             throw `Failed to access ${which.repo}, please check permission of the token`;
         }
+        else {
+            throw e;
+        }
     }
     return true;
+}
+
+async function createBranch (which, sha) {
+    console.log(`  creating branch ${which}`);
+    return createRef(which, `refs/heads/${which.branch}`, sha);
+}
+
+async function createTag (which, name, sha) {
+    console.log(`  creating tag ${name} in ${which.repo}`);
+    return createRef(which, `refs/tags/${name}`, sha);
 }
 
 async function mergeBranch (which, base, head) {
@@ -181,7 +226,7 @@ mergeBranch.Conflict = new Object();
 mergeBranch.Noop = new Object();
 
 async function compareBranches (which, base, head) {
-    // console.log(`merging branch of ${which.owner}/${which.repo}/${head} into ${base}`);
+    console.log(`    comparing branch ${head} with ${base}`);
     try {
         const res = await restClient.repos.compareCommits({
             owner: which.owner,
@@ -198,6 +243,62 @@ async function compareBranches (which, base, head) {
         }
         throw e;
     }
+}
+
+// 直接删除分支，不做任何检查
+async function deleteBranch (which) {
+    try {
+        await restClient.git.deleteRef({
+            owner: which.owner,
+            repo: which.repo,
+            ref: `heads/${which.branch}`,
+            // ref: `tags/${which.branch}`,
+        });
+        // res.status === 204
+        // res.data === undefined
+    }
+    catch (e) {
+        if (e.status === 404) {
+            console.error(`Branch ${which} not exists or don't have permission`);
+        }
+        throw e;
+    }
+}
+
+async function findResLimit (array, runTask, test, limit) {
+    return new Promise(async (resolve, reject) => {
+        for (let i = 0, found = false; i < array.length && !found; i += limit) {
+            let limitedTasks = array.slice(i, Math.min(i + limit, array.length));
+            // console.log('testing ' + limitedTasks);
+            limitedTasks = limitedTasks.map(runTask).map(async x => {
+                try {
+                    let res = await x;
+                    if (test(res)) {
+                        if (found) {
+                            return;
+                        }
+                        found = true;
+                        resolve(true);
+                    }
+                }
+                catch (e) {
+                    if (found) {
+                        return;
+                    }
+                    found = true;
+                    reject(e);
+                }
+            });
+            await Promise.all(limitedTasks);
+        }
+        resolve(false);
+    });
+}
+
+// 判断一个分支是否已经包含在其它分支中
+async function hasBranchBeenMergedTo (which, branch, otherBranches) {
+    otherBranches = otherBranches.map(x => x.name);
+    return await findResLimit(otherBranches, x => compareBranches(which, x, branch), status => status === 'behind', 6);
 }
 
 // TODO - replace with https://developer.github.com/v3/repos/contents/#update-a-file
@@ -345,8 +446,12 @@ module.exports = {
     request,
     requestFromAllPages,
     querySha,
-    createBranch,
     commit,
+    queryBranches,
+    createBranch,
     mergeBranch,
     compareBranches,
+    deleteBranch,
+    hasBranchBeenMergedTo,
+    createTag,
 };

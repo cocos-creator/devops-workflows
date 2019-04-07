@@ -63,8 +63,7 @@ async function queryPepo (which, baseBranches, output) {
       PageRes
     }
   }
-}
-`;
+}`;
     let variables = {
         owner: which.owner,
         repo: which.repo,

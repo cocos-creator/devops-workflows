@@ -70,8 +70,11 @@ function sleep (ms) {
 }
 
 function timer (taskName) {
-    console.log(`  Starting ${taskName}...`);
-    const timerName = `  Finished ${taskName}. Elapsed time`;
+    let trimmedTaskName = taskName.replace(/^\s+/g, '');
+    let indent = 2 + taskName.length - trimmedTaskName.length;
+    let spaces = ' '.repeat(indent);
+    console.log(`${spaces}Starting ${trimmedTaskName}...`);
+    const timerName = `${spaces}Finished ${trimmedTaskName}. Elapsed time`;
     console.time(timerName);
     return function endTimer () {
         console.timeEnd(timerName);
