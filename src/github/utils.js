@@ -1,6 +1,9 @@
 
+const { Transform } = require('stream');
 const _ = require('lodash');
 const semver = require('semver');
+const ghCssPath = require.resolve('github-markdown-css');
+const { readFileSync } = require('fs-extra');
 const utils = require('../utils');
 const settings = utils.getSettings();
 const { Which, request, queryBranches } = require('./github');
@@ -158,6 +161,118 @@ async function queryDependReposFromAllBranches () {
     return { repos, branches };
 }
 
+class DataToMarkdownBase extends Transform {
+    constructor (info) {
+        super({
+            writableObjectMode: true,
+        });
+
+        this.push(this._renderHeader(info));
+    }
+    _transform (chunk, encoding, callback) {
+        // console.log(chunk);
+        this.push(this._renderChunk(chunk));
+        callback();
+    }
+    _final (callback) {
+        let text = this._renderFooter();
+        this.push(text);
+        callback();
+    }
+
+    _renderHeader (info) {
+        throw '_renderHeader NYI';
+    }
+    _renderChunk (info) {
+        throw '_renderChunk NYI';
+    }
+    _renderFooter () {
+        throw '_renderFooter NYI';
+    }
+}
+
+class MarkdownToHTML extends Transform {
+    constructor () {
+        super();
+
+        let showdown = require('showdown');
+        this.converter = new showdown.Converter({
+            openLinksInNewWindow: true,
+        });
+        this.converter.setFlavor('github');
+
+        this._headerRendered = false;
+    }
+    _transform (chunk, encoding, callback) {
+        if (!this._headerRendered) {
+            this.push(this._renderHeader(chunk.toString()));
+            this._headerRendered = true;
+        }
+        else {
+            this.push(this._renderMarkdown(chunk.toString()));
+        }
+        callback();
+    }
+    _final (callback) {
+        this.push(this._renderFooter());
+        callback();
+    }
+
+    _renderHeader (text) {
+        let css = readFileSync(ghCssPath, 'utf8');
+        const GET_TITLE_RE = /^ *# *(.+)/m;
+        let title;
+        text = text.replace(GET_TITLE_RE, function (match, g1) {
+            title = g1;
+            return `<h1 align="center">${title}</h1>`;
+        });
+        if (title) {
+            return this._doRenderHeader(title, css) + this._renderMarkdown(text);
+        }
+        else {
+            throw 'Can not resolve html title from ' + text;
+        }
+    }
+
+    _doRenderHeader (title, css) {
+        return `
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>${title}</title>
+        <style>
+            .markdown-body {
+                box-sizing: border-box;
+                min-width: 200px;
+                max-width: 980px;
+                margin: 0 auto;
+                padding: 45px;
+            }
+        
+            @media (max-width: 767px) {
+                .markdown-body {
+                    padding: 15px;
+                }
+            }
+            
+        ${css}
+        </style>
+    </head>
+    <body class="markdown-body">`;
+    }
+
+    _renderFooter () {
+        return `</body></html>`;
+    }
+
+    _renderMarkdown (text) {
+        let content = this.converter.makeHtml(text);
+        return content;
+    }
+}
+
 module.exports = {
     getFireball,
     getMainPackage,
@@ -165,4 +280,6 @@ module.exports = {
     initBranch,
     sortBranches,
     queryDependReposFromAllBranches,
+    DataToMarkdownBase,
+    MarkdownToHTML,
 };

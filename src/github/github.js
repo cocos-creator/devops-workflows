@@ -16,8 +16,8 @@ const ua = 'Cocos Workflows';
 
 const graphql = require('@octokit/graphql').defaults({
     headers: {
-        'user-agent': ua,
-        authorization: `bearer ${token}`
+        authorization: auth,
+        'user-agent': ua
     },
 });
 
@@ -51,7 +51,7 @@ const maxRetryCount = 3;
 async function request (cmd, variables, retry) {
     let res;
     try {
-        // console.log(cmd);
+        // console.log(cmd, variables);
         res = await graphql(cmd, variables);
         // console.log(res);
     }
@@ -76,7 +76,7 @@ async function requestFromAllPages (query, variables, getConnection) {
     let allNodes = [];
 
     query = query
-        .replace('PageRes', `pageInfo {\n  hasNextPage\n  endCursor\n}`)
+        .replace('PageRes', `pageInfo {\n    hasNextPage\n    endCursor\n  }`)
         .replace('PageVarDef', `$after: String, $first: Int!`)
         .replace('PageVar', `after: $after, first: $first`);
 

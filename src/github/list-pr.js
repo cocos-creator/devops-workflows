@@ -4,9 +4,9 @@ const _ = require('lodash');
 
 const utils = require('../utils');
 const { Which, requestFromAllPages } = require('./github');
-const { getFireball, getMainPackage, parseDependRepos } = require('./utils');
+const { getFireball, getMainPackage, parseDependRepos, MarkdownToHTML } = require('./utils');
 
-const { DataToMarkdown, MarkdownToHTML } = require('./list-pr-output');
+const { DataToMarkdown } = require('./list-pr-output');
 const server = require('./http-server');
 
 process.on('unhandledRejection', (reason) => {
