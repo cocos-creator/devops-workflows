@@ -333,7 +333,7 @@ async function commit (which, path, buffer, message) {
     console.log(`committing content to ${which}: ${path}`);
 
     let content = buffer.toString('base64');
-    let sha = _queryBlob(which, path, 'oid');
+    let sha = await _queryBlob(which, path, 'oid');
 
     let res = await restClient.repos.updateFile({
         owner: which.owner,
@@ -345,7 +345,7 @@ async function commit (which, path, buffer, message) {
         sha,
     });
 
-    console.log(`committed: ${res.datga.commit.html_url}`);
+    console.log(`committed: ${res.data.commit.html_url}`);
 }
 
 const downloadUrlRE = /github\.com\/([^\/]+)\/([^\/]+).+\/(.+)\.zip$/;
@@ -389,6 +389,11 @@ class Which {
     }
 }
 
+function toDateTime (date) {
+    let dt = date.toISOString();            // '2019-04-09T16:57:53.321Z'
+    return dt.replace(/\.\d+(?=Z$)/, '');   // '2019-04-09T16:57:53Z'
+}
+
 module.exports = {
     Which,
     request,
@@ -403,4 +408,5 @@ module.exports = {
     deleteBranch,
     hasBranchBeenMergedTo,
     createTag,
+    toDateTime,
 };

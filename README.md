@@ -119,3 +119,24 @@ npm run delete-branch -- -b branch [--df] [--du]
  - '--du' 命令用于强制删除未合并的分支
 
 分支删除后，将会打上 tag 用于标记位置。如果该分支有未合并的 PR，删除分支后将会自动还原 PR，并且进行相应回复。
+
+**Changelog**
+
+```bash
+npm run changelog -- branch (fromTime|fromVersion) [-t (toTime|toVersion)]
+npm run changelog -- branch (fromTime|fromVersion) [-r [recordVersion]]
+```
+
+该命令会以 PR 为单位收集改动列表，结果将在浏览器中打开。
+ - 'branch' 表示版本发布所用分支，所有更早的版本分支上的 PR 也会一同收集。不对分支是否已合并进行检查。
+ - 'fromTime' 参数指定起始时间，如 `2019-04-01T00:00:00`。
+ - 'fromVersion' 参数指定起始版本，将通过版本号（如 2.0.0-alpha.1）来获取指定版本的时间。
+ - 'toTime' 参数指定结束时间，如果省略则使用当前时间。
+ - 'toVersion' 参数指定结束版本号，如果省略则使用当前时间。
+ - 'recordVersion' 参数指定需要保存的版本号，会将当前时间记录到指定版本号，以便后续用于 fromVersion 或 toVersion。当参数省略，将根据 fromVersion 自动 + 1。
+
+```bash
+npm run changelog -- -r recordVersion
+```
+
+该命令不会收集改动列表，仅用于记录版本号对应的时间

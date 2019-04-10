@@ -10,7 +10,8 @@
     "new-branch": "node src/github/new-branch",
     "list-pr": "node src/github/list-pr",
     "sync-branch": "node src/github/sync-branch",
-    "delete-branch": "node src/github/delete-branch"
+    "delete-branch": "node src/github/delete-branch",
+    "changelog": "node src/github/changelog"
   },
   "repository": {
     "type": "git",
@@ -50,7 +51,8 @@
     "creatorGithub": {
       "token": "",
       "owner": "cocos-creator",
-      "ownerPackages": "cocos-creator-packages"
+      "ownerPackages": "cocos-creator-packages",
+      "storageRepo": "2d-tasks"
     }
   }
 }
