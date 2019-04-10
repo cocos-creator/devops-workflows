@@ -6,34 +6,11 @@ const ghCssPath = require.resolve('github-markdown-css');
 const { readFileSync } = require('fs-extra');
 const utils = require('../utils');
 const settings = utils.getSettings();
-const { Which, request, queryBranches } = require('./github');
+const { Which, request, queryText, queryBranches } = require('./github');
 
 async function getMainPackage (which) {
     console.log('  querying package.json from ' + which);
-    let res = await request(`query ($owner: String!, $repo: String!, $packageExp: String!) {
-  repository(owner: $owner, name: $repo) {
-    object(expression: $packageExp) {
-      ... on Blob {
-        text
-      }
-    }
-  }
-}`, {
-        owner: which.owner,
-        repo: which.repo,
-        packageExp: `${which.branch}:package.json`,
-    });
-
-    let repository = res.repository;
-    if (!repository) {
-        throw `Failed to access ${which.repo}, please check permission of the token`;
-    }
-    let object = repository.object;
-    if (!object) {
-        throw `Failed to load package.json from ${which}, please check the branch`;
-    }
-
-    return object.text;
+    return queryText(which, 'package.json');
 }
 
 // get repos from package.json {

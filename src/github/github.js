@@ -158,7 +158,7 @@ query branches ($owner: String!, $repo: String!, PageVarDef) {
     return res;
 }
 
-async function createRef (which, ref, sha) {
+async function _createRef (which, ref, sha) {
     try {
         let res = await restClient.git.createRef({
             owner: which.owner,
@@ -184,12 +184,12 @@ async function createRef (which, ref, sha) {
 
 async function createBranch (which, sha) {
     console.log(`  creating branch ${which}`);
-    return createRef(which, `refs/heads/${which.branch}`, sha);
+    return _createRef(which, `refs/heads/${which.branch}`, sha);
 }
 
 async function createTag (which, name, sha) {
     console.log(`  creating tag ${name} in ${which.repo}`);
-    return createRef(which, `refs/tags/${name}`, sha);
+    return _createRef(which, `refs/tags/${name}`, sha);
 }
 
 async function mergeBranch (which, base, head) {
@@ -301,103 +301,51 @@ async function hasBranchBeenMergedTo (which, branch, otherBranches) {
     return await findResLimit(otherBranches, x => compareBranches(which, x, branch), status => status === 'behind', 6);
 }
 
-// TODO - replace with https://developer.github.com/v3/repos/contents/#update-a-file
-async function commit (which, url, content, message) {
-    console.log(`committing content to ${which} ${url}`);
-
-    let file = basename(url);
-    if (file !== url) {
-        throw 'The ability to parse sub git tree has not yet been implemented';
-    }
-    let res;
-
-    // Get the current commit object, retrieve the tree it points to
-    //   see https://developer.github.com/v3/git/
-
+async function _queryBlob (which, path, field) {
     let variables = which.toJSON();
-    variables.qualifiedName = `refs/heads/${which.branch}`;
-    console.log(`  querying last commit...`);
-    res = await request(`query ($owner: String!, $repo: String!, $qualifiedName: String!) {
-  repository(owner: $owner, name: $repo) {
-    ref (qualifiedName: $qualifiedName) {
-      target {
-        ... on Commit {
-          oid
-          tree {
-            oid
-          }
-        }
+    variables.expression = `${which.branch}:${path}`;
+    let res = await request(`query sha ($owner: String!, $repo: String!, $expression: String!) {
+  repository (owner: $owner, name: $repo) {
+    blob: object (expression: $expression) {
+      ... on Blob {
+        ${field}
       }
     }
   }
 }`, variables);
-    if (!res) {
-        throw `Failed to query ${variables.qualifiedName}`;
+    let repository = res.repository;
+    if (!repository) {
+        throw `Failed to access ${which.repo}, please check permission of the token`;
     }
-    let { repository: { ref: { target: { oid: parentCommitSha, tree: { oid: parentTreeSha }}}}} = res;
-
-    // get tree
-
-    console.log(`  querying last tree...`);
-    res = await restClient.git.getTree({ owner: which.owner, repo: which.repo, tree_sha: parentTreeSha });
-    if (res.data.truncated) {
-        throw `Tree data truncated, see https://developer.github.com/v3/git/trees/`;
+    let blob = repository.blob;
+    if (!blob) {
+        throw `Failed to query ${variables.expression}, please check the branch`;
     }
-    let tree = res.data.tree;
-    let itemIndex = tree.findIndex(x => x.path === file);
-    if (itemIndex === -1) {
-        throw `Failed to find ${url} in the tree`;
-    }
+    return blob[field];
+}
 
-    // // post a new blob object with that new content, getting a blob SHA back
-    // console.log(`  posting new blob...`);
-    // res = await restClient.git.createBlob({
-    //     owner: which.owner,
-    //     repo: which.repo,
-    //     content,
-    //     encoding: 'utf-8',
-    // });
-    // console.log('  blob sha: ' + res.data.sha); // 95dcc7debc367190fb2eb50f95ae5d83a620c6e3
+async function queryText (which, path) {
+    return _queryBlob(which, path, 'text');
+}
 
-    // update tree
+// https://developer.github.com/v3/repos/contents/#update-a-file
+async function commit (which, path, buffer, message) {
+    console.log(`committing content to ${which}: ${path}`);
 
-    let oldItem = tree[itemIndex];
-    tree[itemIndex] = {
-        path: oldItem.path,
-        mode: oldItem.mode,
-        type: oldItem.type,
-        content
-    };
+    let content = buffer.toString('base64');
+    let sha = _queryBlob(which, path, 'oid');
 
-    // create tree
-
-    console.log(`  posting new tree...`);
-    res = await restClient.git.createTree({ owner: which.owner, repo: which.repo, tree, base_tree: parentTreeSha });
-    let newTreeSha = res.data.sha;
-    console.log('  tree sha: ' + res.data.sha); // 9c1e0fa31047b30e5e5a8e80f106b136d1d911a9
-
-    // make a new commit
-
-    console.log(`  creating new commit...`);
-    res = await restClient.git.createCommit({
+    let res = await restClient.repos.updateFile({
         owner: which.owner,
         repo: which.repo,
+        branch: which.branch,
+        path,
         message,
-        tree: newTreeSha,
-        parents: [parentCommitSha],
+        content,
+        sha,
     });
-    let newCommitSha = res.data.sha;
-    console.log(`  New Commit: ${res.data.html_url}`);
 
-    // update branch
-
-    console.log(`  updating ref...`);
-    await restClient.git.updateRef({
-        owner: which.owner,
-        repo: which.repo,
-        ref: `heads/${which.branch}`,
-        sha: newCommitSha,
-    });
+    console.log(`committed: ${res.datga.commit.html_url}`);
 }
 
 const downloadUrlRE = /github\.com\/([^\/]+)\/([^\/]+).+\/(.+)\.zip$/;
@@ -446,6 +394,7 @@ module.exports = {
     request,
     requestFromAllPages,
     querySha,
+    queryText,
     commit,
     queryBranches,
     createBranch,

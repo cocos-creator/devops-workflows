@@ -108,7 +108,7 @@ function bumpDependRepos (packageContent, packageJson) {
     // commit package.json
 
     let commitMsg = `Switch dependencies to ${program.newBranch}`;
-    await commit(fireballNew, 'package.json', packageContent, commitMsg);
+    await commit(fireballNew, 'package.json', new Buffer(packageContent), commitMsg);
 
     console.log(`Finished create branch`);
 })();
