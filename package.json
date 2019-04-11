@@ -11,7 +11,8 @@
     "list-pr": "node src/github/list-pr",
     "sync-branch": "node src/github/sync-branch",
     "delete-branch": "node src/github/delete-branch",
-    "changelog": "node src/github/changelog"
+    "changelog": "node src/github/changelog",
+    "clean-issue": "node src/github/clean-issue"
   },
   "repository": {
     "type": "git",
@@ -53,7 +54,8 @@
       "token": "",
       "owner": "cocos-creator",
       "ownerPackages": "cocos-creator-packages",
-      "storageRepo": "2d-tasks"
+      "storageRepo": "2d-tasks",
+      "tasksRepo": "2d-tasks"
     },
     "usernames": {
       "jareguo": "郭佳伟"

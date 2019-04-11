@@ -3,6 +3,7 @@ const chalk = require('chalk');
 
 const { Which, deleteBranch, hasBranchBeenMergedTo, createTag, queryBranches, request, requestFromAllPages } = require('./github');
 const { getFireball, queryDependReposFromAllBranches, sortBranches, initBranch } = require('./utils');
+require('../global-init');
 const utils = require('../utils');
 
 
@@ -29,10 +30,6 @@ const program = require('commander');
         console.log(`Delete merged branch '${program.branch}'`);
     }
 })();
-
-process.on('unhandledRejection', (reason) => {
-    console.error(chalk.red(reason.stack || reason));
-});
 
 const GET_VERSION_RE = /^v(\d+\.\d+(?:\.\d+)?)(?:-release)?$/i;
 function getTagName (name) {

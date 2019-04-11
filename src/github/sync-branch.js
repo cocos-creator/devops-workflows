@@ -5,11 +5,9 @@ const _ = require('lodash');
 
 const { Which, mergeBranch, queryBranches, hasBranchBeenMergedTo } = require('./github');
 const { getFireball, queryDependReposFromAllBranches, sortBranches, initBranch } = require('./utils');
+require('../global-init');
 const utils = require('../utils');
 
-process.on('unhandledRejection', (reason) => {
-    console.error(chalk.red(reason.stack || reason));
-});
 
 async function syncBranch (which, branches) {
     if (!branches) {

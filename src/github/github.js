@@ -71,7 +71,7 @@ async function request (cmd, variables, retry) {
 }
 
 async function requestFromAllPages (query, variables, getConnection) {
-    const ITEM_PER_PAGE = 20;
+    const ITEM_PER_PAGE = 50;
 
     let allNodes = [];
 

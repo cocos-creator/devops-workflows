@@ -100,6 +100,16 @@ npm run list-pr -- branch1 [...branch2]
 
 该命令会显示所有 GitHub 上需要合并的 PR，可以输入任意多个分支，最后一个分支将用于解析依赖的仓库。结果将在浏览器中显示。
 
+**Clean Issue**
+
+```bash
+npm run clean-issue
+```
+
+该命令会列出所有可以关闭的 Issue，结果将在浏览器中打开。判断规则如下：
+ - 如果有未合并的 PR 关联到 issue 上，则不可关闭
+ - 如果有提交或者已合并的 PR 关联到 issue 上，则可关闭
+
 **Sync Branch**
 
 ```bash

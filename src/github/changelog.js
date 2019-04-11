@@ -3,6 +3,7 @@ const chalk = require('chalk');
 const _ = require('lodash');
 const semver = require('semver');
 
+require('../global-init');
 const utils = require('../utils');
 const { Which, queryBranches, requestFromAllPages, toDateTime } = require('./github');
 const { getFireball, getMainPackage, parseDependRepos, initBranch, sortBranches, MarkdownToHTML } = require('./utils');
@@ -11,10 +12,6 @@ const storagePath = 'versions';
 
 const { Sort, DataToMarkdown } = require('./changelog-output');
 const server = require('./http-server');
-
-process.on('unhandledRejection', (reason) => {
-    console.error(chalk.red(reason.stack || reason));
-});
 
 const settings = utils.getSettings();
 

@@ -1,6 +1,7 @@
 
 const chalk = require('chalk');
 
+require('../global-init');
 const { Which, querySha, createBranch, commit } = require('./github');
 const { getFireball, getMainPackage, parseDependRepos } = require('./utils');
 
@@ -31,10 +32,6 @@ const program = require('commander');
     // if (program.baseBranch && program.newBranch) {
     // }
 })();
-
-process.on('unhandledRejection', (reason) => {
-    console.error(chalk.red(reason.stack || reason));
-});
 
 
 function bumpDependRepos (packageContent, packageJson) {

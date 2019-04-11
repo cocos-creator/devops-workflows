@@ -2,6 +2,7 @@
 const chalk = require('chalk');
 const _ = require('lodash');
 
+require('../global-init');
 const utils = require('../utils');
 const { Which, requestFromAllPages } = require('./github');
 const { getFireball, getMainPackage, parseDependRepos, MarkdownToHTML } = require('./utils');
@@ -9,9 +10,6 @@ const { getFireball, getMainPackage, parseDependRepos, MarkdownToHTML } = requir
 const { DataToMarkdown } = require('./list-pr-output');
 const server = require('./http-server');
 
-process.on('unhandledRejection', (reason) => {
-    console.error(chalk.red(reason.stack || reason));
-});
 
 // args
 
