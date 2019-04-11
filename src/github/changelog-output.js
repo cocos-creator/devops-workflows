@@ -85,7 +85,7 @@ class DataToMarkdown extends DataToMarkdownBase {
         }
         text += `[${repo}] [${pr.title}](${pr.url})
 <blockquote>
-Author: ${pr.author.login}${link}<br>
+By: ${pr.author.name}${link}<br>
 ${pr.bodyText}
 </blockquote>
 `;
@@ -99,15 +99,6 @@ ${pr.bodyText}
 \`\`\`
 ${info}
 \`\`\`
-`;
-    }
-
-    _renderFooter () {
-        return `
-----
-<div align="center">
-Made wtih ❤️ by Jare
-</div>
 `;
     }
 }

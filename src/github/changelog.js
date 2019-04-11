@@ -16,6 +16,8 @@ process.on('unhandledRejection', (reason) => {
     console.error(chalk.red(reason.stack || reason));
 });
 
+const settings = utils.getSettings();
+
 // parse args
 
 const program = require('commander');
@@ -147,14 +149,15 @@ async function queryPepo (which, from, to, output) {
         let toTime = to.getTime();
         prs = prs.filter(x => (new Date(x.mergedAt).getTime() <= toTime));
     }
-    // let fromOtherVersions = prs.filter(x => x.headRepositoryOwner.login === which.owner && initBranch({ name: x.headRefName }).isMainChannel);
-    prs = prs.value();
-    for (let pr of prs) {
+    prs.forEach(pr => {
+        let author = pr.author;
+        author.name = settings.usernames[author.login] || author.login;
         output.write({
             which: new Which(which.owner, which.repo, pr.baseRefName),
             pr
         });
-    }
+    });
+    // let fromOtherVersions = prs.filter(x => x.headRepositoryOwner.login === which.owner && initBranch({ name: x.headRefName }).isMainChannel);
 }
 
 //

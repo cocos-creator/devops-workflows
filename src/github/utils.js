@@ -164,7 +164,12 @@ class DataToMarkdownBase extends Transform {
         throw '_renderChunk NYI';
     }
     _renderFooter () {
-        throw '_renderFooter NYI';
+        return `
+----
+<div align="center">
+Made wtih 🖤️ by jare
+</div>
+`;
     }
 }
 

@@ -48,15 +48,6 @@ ${pr.bodyHTML}
 `)}
 `;
     }
-
-    _renderFooter () {
-        return `
-----
-<div align="center">
-Made wtih ❤️ by Jare
-</div>
-`;
-    }
 }
 
 module.exports = {
