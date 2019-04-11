@@ -2,8 +2,11 @@
 const { Transform } = require('stream');
 const _ = require('lodash');
 const semver = require('semver');
+
 const ghCssPath = require.resolve('github-markdown-css');
+const clipboardPath = require.resolve('clipboard/dist/clipboard.min.js');
 const { readFileSync } = require('fs-extra');
+
 const utils = require('../utils');
 const settings = utils.getSettings();
 const { Which, request, queryText, queryBranches } = require('./github');
@@ -173,6 +176,12 @@ Made wtih 🖤️ by jare
     }
 }
 
+const COPY_ELEMENT_RE = /<\s*code\s*>(?!\s*>)/g;
+
+function list (array, callback) {
+    return array.map(callback).join('');
+}
+
 class MarkdownToHTML extends Transform {
     constructor () {
         super();
@@ -184,6 +193,7 @@ class MarkdownToHTML extends Transform {
         this.converter.setFlavor('github');
 
         this._headerRendered = false;
+        this._ids = 0;
     }
     _transform (chunk, encoding, callback) {
         if (!this._headerRendered) {
@@ -196,7 +206,13 @@ class MarkdownToHTML extends Transform {
         callback();
     }
     _final (callback) {
-        this.push(this._renderFooter());
+        let clipboard = readFileSync(clipboardPath, 'utf8');
+        let initClipboard = `new ClipboardJS('code', {
+            text (trigger) {
+                return trigger.getAttribute('data-clipboard-text') || trigger.innerText;
+            }
+        });`;
+        this.push(this._renderFooter([clipboard, initClipboard]));
         callback();
     }
 
@@ -209,17 +225,19 @@ class MarkdownToHTML extends Transform {
             return `<h1 align="center">${title}</h1>`;
         });
         if (title) {
-            return this._doRenderHeader(title, css) + this._renderMarkdown(text);
+            return this._doRenderHeader(title, css, []) + this._renderMarkdown(text);
         }
         else {
             throw 'Can not resolve html title from ' + text;
         }
     }
 
-    _doRenderHeader (title, css) {
+    _doRenderHeader (title, css, jsList) {
         return `
 <!DOCTYPE HTML>
 <html>
+    ${list(jsList, x => `
+    <script type="text/javascript" charset="utf-8">x</script>`)}
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -232,25 +250,36 @@ class MarkdownToHTML extends Transform {
                 margin: 0 auto;
                 padding: 45px;
             }
+            
+            .markdown-body code:hover {
+                text-decoration: underline;
+            }
         
             @media (max-width: 767px) {
                 .markdown-body {
                     padding: 15px;
                 }
             }
-            
         ${css}
         </style>
     </head>
     <body class="markdown-body">`;
     }
 
-    _renderFooter () {
-        return `</body></html>`;
+    _renderFooter (jsList) {
+        return `
+        ${list(jsList, x => `
+        <script type="text/javascript" charset="utf-8">${x}</script>`)}
+    </body>
+</html>`;
     }
 
     _renderMarkdown (text) {
         let content = this.converter.makeHtml(text);
+        // content = content.replace(COPY_ELEMENT_RE, () => {
+        //     let id = `copy${++this._ids}`;
+        //     return `<code id="${id}" data-clipboard-target="#${id}">`;
+        // });
         return content;
     }
 }

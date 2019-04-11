@@ -81,12 +81,12 @@ class DataToMarkdown extends DataToMarkdownBase {
         let repo = which.repo;
         let link = '';
         if (!pr.repository.isPrivate) {
-            link = `, Link: [#${pr.number}] ${pr.url}`
+            link = `, Link: <code>[#${pr.number}]</code> <code>${pr.url}</code>`
         }
         text += `[${repo}] [${pr.title}](${pr.url})
 <blockquote>
-By: ${pr.author.name}${link}<br>
-${pr.bodyText}
+By: <code>${pr.author.name}</code>${link}<br>
+${when(pr.bodyText, `<code>${pr.bodyText}</code>`)}
 </blockquote>
 `;
         return text;
@@ -98,6 +98,7 @@ ${pr.bodyText}
 
 \`\`\`
 ${info}
+(You can copy underline texts to the clipboard directly by clicking on them)
 \`\`\`
 `;
     }

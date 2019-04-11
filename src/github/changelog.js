@@ -82,6 +82,8 @@ if (program.recordVersion) {
     }
 }
 
+const REF_RE = /^(?:Re:|ref)\s*[^\s:]*\s+/i;
+
 async function queryPepo (which, from, to, output) {
 
     // get branches to query
@@ -152,6 +154,7 @@ async function queryPepo (which, from, to, output) {
     prs.forEach(pr => {
         let author = pr.author;
         author.name = settings.usernames[author.login] || author.login;
+        pr.bodyText = pr.bodyText.replace(REF_RE, '');
         output.write({
             which: new Which(which.owner, which.repo, pr.baseRefName),
             pr
@@ -172,8 +175,8 @@ async function gatherData (output) {
     let repos = [fireball].concat(parseDependRepos(packageJson));
 
     // list pr
-    let promises = [fireball].map(x => queryPepo(x, program.fromTime, program.toTime, output));
-    // let promises = repos.map(x => queryPepo(x, program.fromTime, program.toTime, output));
+    // let promises = [fireball].map(x => queryPepo(x, program.fromTime, program.toTime, output));
+    let promises = repos.map(x => queryPepo(x, program.fromTime, program.toTime, output));
     await Promise.all(promises);
 
     endTimer();
