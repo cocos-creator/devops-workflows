@@ -106,9 +106,7 @@ async function querySha (which) {
   repository(owner: $owner, name: $repo) {
     ref (qualifiedName: $qualifiedName) {
       target {
-        ... on Commit {
-          oid
-        }
+        oid
       }
     }
   }
@@ -132,8 +130,11 @@ query branches ($owner: String!, $repo: String!, PageVarDef) {
     refs(refPrefix: "refs/heads/", direction: DESC, PageVar) {
       nodes {
         name
-        target {
-          oid
+        commit: target {
+          ... on Commit {
+            oid
+            pushedDate
+          }
         }
       }
       PageRes
@@ -151,10 +152,14 @@ query branches ($owner: String!, $repo: String!, PageVarDef) {
         }
         return repository.refs;
     });
+    // endTimer();
 
     res = res.filter(x => x.name !== 'gh-pages');
+    res.forEach(x => {
+        let date = new Date(x.commit.pushedDate);
+        x.updatedAt = date.getTime();
+    });
 
-    // endTimer();
     return res;
 }
 
@@ -270,24 +275,27 @@ async function findResLimit (array, runTask, test, limit) {
         for (let i = 0, found = false; i < array.length && !found; i += limit) {
             let limitedTasks = array.slice(i, Math.min(i + limit, array.length));
             // console.log('testing ' + limitedTasks);
-            limitedTasks = limitedTasks.map(runTask).map(async x => {
-                try {
-                    let res = await x;
-                    if (test(res)) {
+            limitedTasks = limitedTasks.map(x => {
+                let promise = runTask(x);
+                return (async function () {
+                    try {
+                        let res = await promise;
+                        if (test(res)) {
+                            if (found) {
+                                return;
+                            }
+                            found = true;
+                            resolve(x);
+                        }
+                    }
+                    catch (e) {
                         if (found) {
                             return;
                         }
                         found = true;
-                        resolve(true);
+                        reject(e);
                     }
-                }
-                catch (e) {
-                    if (found) {
-                        return;
-                    }
-                    found = true;
-                    reject(e);
-                }
+                })();
             });
             await Promise.all(limitedTasks);
         }
@@ -297,8 +305,15 @@ async function findResLimit (array, runTask, test, limit) {
 
 // 判断一个分支是否已经包含在其它分支中
 async function hasBranchBeenMergedTo (which, branch, otherBranches) {
-    otherBranches = otherBranches.map(x => x.name);
-    return await findResLimit(otherBranches, x => compareBranches(which, x, branch), status => status === 'behind', 6);
+    return await findResLimit(otherBranches, x => {
+        if (branch.updatedAt > x.updatedAt) {
+            // console.log(`${branch.name} updated behind ${x.name}`);
+            return Promise.resolve('not-behind');
+        }
+        else {
+            return compareBranches(which, x.name, branch.name);
+        }
+    }, status => status === 'behind', 6);
 }
 
 async function _queryBlob (which, path, field) {
@@ -404,7 +419,6 @@ module.exports = {
     queryBranches,
     createBranch,
     mergeBranch,
-    compareBranches,
     deleteBranch,
     hasBranchBeenMergedTo,
     createTag,

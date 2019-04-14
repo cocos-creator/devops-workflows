@@ -5,8 +5,8 @@ const semver = require('semver');
 
 require('../global-init');
 const utils = require('../utils');
-const { Which, queryBranches, requestFromAllPages, toDateTime } = require('./github');
-const { getFireball, getMainPackage, parseDependRepos, fillBranchInfo, sortBranches, MarkdownToHTML } = require('./utils');
+const { Which, requestFromAllPages, toDateTime } = require('./github');
+const { getFireball, getMainPackage, querySortedBranches, parseDependRepos, MarkdownToHTML } = require('./utils');
 const storage = require('./storage');
 const storagePath = 'versions';
 
@@ -85,10 +85,8 @@ async function queryPepo (which, from, to, output) {
 
     // get branches to query
 
-    let branches = await queryBranches(which);
-    branches.forEach(fillBranchInfo);
+    let branches = await querySortedBranches(which);
     branches = branches.filter(x => x.isMainChannel);
-    sortBranches(branches);
     branches = branches.map(x => x.name);
     let index = branches.indexOf(which.branch);
     if (index !== -1) {

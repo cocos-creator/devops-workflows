@@ -1,8 +1,8 @@
 
 const chalk = require('chalk');
 
-const { Which, deleteBranch, hasBranchBeenMergedTo, createTag, queryBranches, request, requestFromAllPages } = require('./github');
-const { getFireball, queryDependReposFromAllBranches, sortBranches, fillBranchInfo } = require('./utils');
+const { Which, deleteBranch, hasBranchBeenMergedTo, createTag, request, requestFromAllPages } = require('./github');
+const { getFireball, queryDependReposFromAllBranches, querySortedBranches, fillBranchInfo } = require('./utils');
 require('../global-init');
 const utils = require('../utils');
 
@@ -126,15 +126,13 @@ If necessary, welcome to resubmit a PR to other branches, thank you!`;
 async function processBranch (which) {
     // const endTimer = utils.timer(`delete branch '${which}'`);
 
-    let branches = await queryBranches(which);
-    branches.forEach(fillBranchInfo);
+    let branches = await querySortedBranches(which);
     let branch = branches.find(x => x.name === which.branch);
     if (branch) {
         if (!program.deleteUnmerged) {
             // check merge state
             let restBranches = branches.filter(x => x !== branch);
-            sortBranches(restBranches);
-            let merged = await hasBranchBeenMergedTo(which, branch.name, restBranches);
+            let merged = await hasBranchBeenMergedTo(which, branch, restBranches);
             if (!merged) {
                 console.warn(`  Can not delete unmerged branch '${which}', add parameter --du to force delete`);
                 endTimer();

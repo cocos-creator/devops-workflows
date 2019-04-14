@@ -4,7 +4,7 @@ const chalk = require('chalk');
 const _ = require('lodash');
 
 const { Which, mergeBranch, queryBranches, hasBranchBeenMergedTo } = require('./github');
-const { getFireball, queryDependReposFromAllBranches, sortBranches, fillBranchInfo } = require('./utils');
+const { getFireball, queryDependReposFromAllBranches, sortBranchesByVersion, fillBranchInfo } = require('./utils');
 require('../global-init');
 const utils = require('../utils');
 
@@ -14,34 +14,35 @@ async function syncBranch (which, branches) {
         branches = await queryBranches(which);
         branches.forEach(fillBranchInfo);
         branches = branches.filter(x => x.isMainChannel);
-        sortBranches(branches);
     }
+    sortBranchesByVersion(branches);
 
     const endTimer = utils.timer(`synchronize branches of ${which}`);
     console.log(`    (${branches.map(x => x.name).join(' -> ')})`);
 
     for (let i = 0; i < branches.length - 1; i++) {
-        let oldBranch = branches[i].name;
-        let newBranch = branches[i + 1].name;
+        let oldBranch = branches[i];
+        let oldBranchName = oldBranch.name;
+        let newBranchName = branches[i + 1].name;
 
         // try to merge directly
-        const res = await mergeBranch(which, newBranch, oldBranch);
+        const res = await mergeBranch(which, newBranchName, oldBranchName);
         if (res === mergeBranch.Merged) {
-            console.log(`    merged on '${which.repo}', '${oldBranch}' -> '${newBranch}'`);
+            console.log(`    merged on '${which.repo}', '${oldBranchName}' -> '${newBranchName}'`);
         }
         else if (res === mergeBranch.Conflict) {
             // checks if merged to newer branches
             let newBranches = branches.slice(i + 2);
             let mergedTo = await hasBranchBeenMergedTo(which, oldBranch, newBranches);
             if (mergedTo) {
-                console.log(`    '${which.repo}/${oldBranch}' has previously been merged into '${mergedTo}', cancel merge to '${newBranch}'.`);
+                console.log(`    '${which.repo}/${oldBranchName}' has previously been merged into '${mergedTo.name}', cancel merge to '${newBranchName}'.`);
             }
             else {
-                console.warn(`    Can’t automatically merge branches of '${which.repo}', from '${oldBranch}' into '${newBranch}'.`);
+                console.warn(`    Can’t automatically merge branches of '${which.repo}', from '${oldBranchName}' into '${newBranchName}'.`);
                 return {
                     which,
-                    oldBranch,
-                    newBranch,
+                    oldBranch: oldBranchName,
+                    newBranch: newBranchName,
                 };
             }
         }

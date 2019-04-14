@@ -5,8 +5,8 @@ const semver = require('semver');
 
 require('../global-init');
 const utils = require('../utils');
-const { Which, requestFromAllPages, queryBranches } = require('./github');
-const { getFireball, getMainPackage, parseDependRepos, MarkdownToHTML, fillBranchInfo, sortBranches } = require('./utils');
+const { Which, requestFromAllPages } = require('./github');
+const { getFireball, getMainPackage, querySortedBranches, parseDependRepos, MarkdownToHTML, fillBranchInfo } = require('./utils');
 
 const { DataToMarkdown } = require('./list-pr-output');
 const server = require('./http-server');
@@ -186,10 +186,8 @@ async function deferredInit (output, toHTML) {
             throw 'Missing semver';
         }
 
-        baseBranches = (await queryBranches(getFireball()))
-            .map(fillBranchInfo)
+        baseBranches = (await querySortedBranches(getFireball()))
             .filter(x => semver.satisfies(x.semver, baseBranchSemver));
-        sortBranches(baseBranches);
         baseBranches = baseBranches.map(x => x.name);
         currentBranch = baseBranches[baseBranches.length - 1];
     }

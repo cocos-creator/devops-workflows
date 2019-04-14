@@ -1,6 +1,6 @@
 
 const { Transform } = require('stream');
-const { DataToMarkdownBase, fillBranchInfo, sortBranches } = require('./utils');
+const { DataToMarkdownBase, fillBranchInfo, sortBranchesByVersion } = require('./utils');
 
 const title = 'Cocos Creator Changelog';
 
@@ -27,7 +27,7 @@ class Sort extends Transform {
     }
     _final (callback) {
         let branches = Object.keys(this._branchToChunks).map(x => fillBranchInfo(x));
-        sortBranches(branches);
+        sortBranchesByVersion(branches);
         branches.reverse();
         for (let branch of branches) {
             let chunks = this._branchToChunks[branch.name];

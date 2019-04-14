@@ -95,7 +95,7 @@ function fillBranchInfo (branch) {
     return branch;
 }
 
-function sortBranches (branches) {
+function sortBranchesByVersion (branches) {
     // 排序分支，提高命中率。
     //   一般我们删除的都会是最旧的版本分支，所以先从旧往新排序
     //   通常功能分支比较独立，所以可以放到最后再判断
@@ -126,12 +126,23 @@ function sortBranches (branches) {
     });
 }
 
+function sortBranchesByUpdateTime (branches) {
+    branches.sort((lhs, rhs) => {
+        return lhs.updatedAt - rhs.updatedAt;
+    });
+}
+
+async function querySortedBranches (which) {
+    let branches = await queryBranches(which);
+    branches.forEach(fillBranchInfo);
+    sortBranchesByUpdateTime(branches);
+    return branches;
+}
+
 async function queryDependReposFromAllBranches () {
     let fireball = getFireball(null);
-    let branches = await queryBranches(fireball);
-    branches.forEach(fillBranchInfo);
+    let branches = await querySortedBranches(fireball);
     branches = branches.filter(x => x.isMainChannel);
-    sortBranches(branches);
     let branchesToParseDep = branches.slice(-3).map(x => x.name);
     let endTimer = utils.timer(`query repos of ${branchesToParseDep} in ${fireball}`);
 
@@ -297,8 +308,9 @@ module.exports = {
     getMainPackage,
     parseDependRepos,
     fillBranchInfo,
-    sortBranches,
+    sortBranchesByVersion,
     queryDependReposFromAllBranches,
+    querySortedBranches,
     DataToMarkdownBase,
     MarkdownToHTML,
 };
