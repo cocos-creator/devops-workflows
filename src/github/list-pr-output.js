@@ -40,7 +40,7 @@ ${info}
 ${list(data.prs, pr => `
 ### [${pr.title}](${pr.url})
 
-> branch: **${pr.baseRefName}**, author: **${pr.author.login}**, updated: **${pr.updatedAt}**
+> branch: **${pr.baseRefName}**, author: **${pr.author.name}**, updated: **${pr.updatedAt}**
 
 <blockquote>
 ${pr.bodyHTML}

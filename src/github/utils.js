@@ -144,7 +144,7 @@ async function queryDependReposFromAllBranches () {
     let branches = await querySortedBranches(fireball);
     branches = branches.filter(x => x.isMainChannel);
     let branchesToParseDep = branches.slice(-3).map(x => x.name);
-    let endTimer = utils.timer(`query repos of ${branchesToParseDep} in ${fireball}`);
+    let endTimer = utils.timer(`query repos of [${branchesToParseDep}] in ${fireball}`);
 
     let packages = await Promise.all(branchesToParseDep.map(x => {
         let which = new Which(fireball.owner, fireball.repo, x);
@@ -157,7 +157,7 @@ async function queryDependReposFromAllBranches () {
     });
 
     endTimer();
-    return { repos, branches };
+    return { repos, branches, branchesToParseDep };
 }
 
 class DataToMarkdownBase extends Transform {
