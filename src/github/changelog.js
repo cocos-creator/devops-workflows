@@ -6,7 +6,7 @@ const semver = require('semver');
 require('../global-init');
 const utils = require('../utils');
 const { Which, queryBranches, requestFromAllPages, toDateTime } = require('./github');
-const { getFireball, getMainPackage, parseDependRepos, initBranch, sortBranches, MarkdownToHTML } = require('./utils');
+const { getFireball, getMainPackage, parseDependRepos, fillBranchInfo, sortBranches, MarkdownToHTML } = require('./utils');
 const storage = require('./storage');
 const storagePath = 'versions';
 
@@ -86,7 +86,7 @@ async function queryPepo (which, from, to, output) {
     // get branches to query
 
     let branches = await queryBranches(which);
-    branches.forEach(initBranch);
+    branches.forEach(fillBranchInfo);
     branches = branches.filter(x => x.isMainChannel);
     sortBranches(branches);
     branches = branches.map(x => x.name);
@@ -157,7 +157,7 @@ async function queryPepo (which, from, to, output) {
             pr
         });
     });
-    // let fromOtherVersions = prs.filter(x => x.headRepositoryOwner.login === which.owner && initBranch({ name: x.headRefName }).isMainChannel);
+    // let fromOtherVersions = prs.filter(x => x.headRepositoryOwner.login === which.owner && fillBranchInfo(x.headRefName).isMainChannel);
 }
 
 //

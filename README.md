@@ -100,6 +100,12 @@ npm run list-pr -- branch1 [...branch2]
 
 该命令会显示所有 GitHub 上需要合并的 PR，可以输入任意多个分支，最后一个分支将用于解析依赖的仓库。结果将在浏览器中显示。
 
+```bash
+npm run list-pr -- -s semver
+```
+
+该命令接受一个 semver 作为分支名，如 2.x。
+
 **Clean Issue**
 
 ```bash

@@ -2,7 +2,7 @@
 const chalk = require('chalk');
 
 const { Which, deleteBranch, hasBranchBeenMergedTo, createTag, queryBranches, request, requestFromAllPages } = require('./github');
-const { getFireball, queryDependReposFromAllBranches, sortBranches, initBranch } = require('./utils');
+const { getFireball, queryDependReposFromAllBranches, sortBranches, fillBranchInfo } = require('./utils');
 require('../global-init');
 const utils = require('../utils');
 
@@ -16,8 +16,7 @@ const program = require('commander');
     .parse(process.argv);
 
     if (!program.deleteFeature) {
-        let branch = { name: program.branch };
-        initBranch(branch);
+        let branch = fillBranchInfo(program.branch);
         if (!branch.isMainChannel) {
             console.error(`Should not delete feature branch, add parameter --df to force delete feature branch`);
             process.exit(1);
@@ -128,7 +127,7 @@ async function processBranch (which) {
     // const endTimer = utils.timer(`delete branch '${which}'`);
 
     let branches = await queryBranches(which);
-    branches.forEach(initBranch);
+    branches.forEach(fillBranchInfo);
     let branch = branches.find(x => x.name === which.branch);
     if (branch) {
         if (!program.deleteUnmerged) {
@@ -143,7 +142,7 @@ async function processBranch (which) {
             }
         }
         // backup a tag
-        const sha = branch.target.oid;
+        const sha = branch.commit.oid;
         let created = await createTag(which, getTagName(which.branch), sha);
         if (!created) {
             await createTag(which, getUniqueTagName(which.branch), sha);

@@ -62,8 +62,15 @@ function getFireball (branch) {
 
 const VERSION_BRANCH_RE = /^v\d+\.\d+(\.\d+)?(?:-release)?$/i;
 const SORT_ORDER = ['__SEMVER__', 'master', 'dev', 'develop', '__FEATURE__'];
-function initBranch (branch) {
-    let name = branch.name;
+function fillBranchInfo (branch) {
+    let name;
+    if (typeof branch === 'string') {
+        name = branch;
+        branch = { name };
+    }
+    else {
+        name = branch.name;
+    }
     let match = VERSION_BRANCH_RE.exec(name);
     if (match) {
         branch.semver = semver.coerce(name);
@@ -76,7 +83,7 @@ function initBranch (branch) {
         branch.mainChannelOrder = SORT_ORDER.indexOf('__SEMVER__');
     }
     else {
-        let index = SORT_ORDER.indexOf(branch.name);
+        let index = SORT_ORDER.indexOf(name);
         branch.isMainChannel = index !== -1;
         if (branch.isMainChannel) {
             branch.mainChannelOrder = index;
@@ -85,6 +92,7 @@ function initBranch (branch) {
             branch.mainChannelOrder = SORT_ORDER.indexOf('__FEATURE__');
         }
     }
+    return branch;
 }
 
 function sortBranches (branches) {
@@ -121,7 +129,7 @@ function sortBranches (branches) {
 async function queryDependReposFromAllBranches () {
     let fireball = getFireball(null);
     let branches = await queryBranches(fireball);
-    branches.forEach(initBranch);
+    branches.forEach(fillBranchInfo);
     branches = branches.filter(x => x.isMainChannel);
     sortBranches(branches);
     let branchesToParseDep = branches.slice(-3).map(x => x.name);
@@ -288,7 +296,7 @@ module.exports = {
     getFireball,
     getMainPackage,
     parseDependRepos,
-    initBranch,
+    fillBranchInfo,
     sortBranches,
     queryDependReposFromAllBranches,
     DataToMarkdownBase,

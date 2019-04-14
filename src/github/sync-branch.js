@@ -4,7 +4,7 @@ const chalk = require('chalk');
 const _ = require('lodash');
 
 const { Which, mergeBranch, queryBranches, hasBranchBeenMergedTo } = require('./github');
-const { getFireball, queryDependReposFromAllBranches, sortBranches, initBranch } = require('./utils');
+const { getFireball, queryDependReposFromAllBranches, sortBranches, fillBranchInfo } = require('./utils');
 require('../global-init');
 const utils = require('../utils');
 
@@ -12,7 +12,7 @@ const utils = require('../utils');
 async function syncBranch (which, branches) {
     if (!branches) {
         branches = await queryBranches(which);
-        branches.forEach(initBranch);
+        branches.forEach(fillBranchInfo);
         branches = branches.filter(x => x.isMainChannel);
         sortBranches(branches);
     }

@@ -1,22 +1,16 @@
 
 const chalk = require('chalk');
 const _ = require('lodash');
+const semver = require('semver');
 
 require('../global-init');
 const utils = require('../utils');
-const { Which, requestFromAllPages } = require('./github');
-const { getFireball, getMainPackage, parseDependRepos, MarkdownToHTML } = require('./utils');
+const { Which, requestFromAllPages, queryBranches } = require('./github');
+const { getFireball, getMainPackage, parseDependRepos, MarkdownToHTML, fillBranchInfo, sortBranches } = require('./utils');
 
 const { DataToMarkdown } = require('./list-pr-output');
 const server = require('./http-server');
 
-
-// args
-
-const baseBranches = process.argv.slice(2);
-const currentBranch = baseBranches[baseBranches.length - 1];
-const info = `List open pull requests based on branch [${baseBranches}], read dependencies from ${currentBranch}`;
-console.log(info);
 
 //
 
@@ -75,7 +69,16 @@ async function queryPepo (which, baseBranches, output) {
     });
     prs = _(prs)
         .filter(canMerge)
-        .filter(x => baseBranches.includes(x.baseRefName))
+        .filter(x => {
+            if (Array.isArray(baseBranches)) {
+                return baseBranches.includes(x.baseRefName)
+            }
+            else {
+                // semver
+                let branch = fillBranchInfo(x.baseRefName);
+                return semver.satisfies(branch.semver, baseBranches);
+            }
+        })
         .sortBy('baseRefName')
         .value();
 
@@ -88,11 +91,12 @@ async function queryPepo (which, baseBranches, output) {
 
 //
 
-async function gatherData (output) {
+async function gatherData (output, baseBranches) {
     const timerName = `Finished list pull requests`;
     console.time(timerName);
 
     // parse repos
+    let currentBranch = baseBranches[baseBranches.length - 1];
     let fireball = getFireball(currentBranch);
     let packageContent = await getMainPackage(fireball);
     let packageJson = JSON.parse(packageContent);
@@ -173,6 +177,32 @@ async function deferredInit (output, toHTML) {
 
     // init
 
+    const args = process.argv.slice(2);
+    let baseBranches, currentBranch;
+    if (args[0] === '-s') {
+        // semver
+        let baseBranchSemver = args[1];
+        if (!baseBranchSemver) {
+            throw 'Missing semver';
+        }
+
+        baseBranches = (await queryBranches(getFireball()))
+            .map(fillBranchInfo)
+            .filter(x => semver.satisfies(x.semver, baseBranchSemver));
+        sortBranches(baseBranches);
+        baseBranches = baseBranches.map(x => x.name);
+        currentBranch = baseBranches[baseBranches.length - 1];
+    }
+    else {
+        // bransh list
+        baseBranches = args;
+        currentBranch = baseBranches[baseBranches.length - 1];
+    }
+    let info = `Review pull requests for branches [${baseBranches}].\nResolve dependent repos from ${currentBranch}.`;
+    console.log(info);
+
+    // init
+
     let output = new DataToMarkdown(info);
     let toHTML = new MarkdownToHTML();
     output.pipe(toHTML);
@@ -180,7 +210,7 @@ async function deferredInit (output, toHTML) {
     // process concurrently and streaming to server
 
     await Promise.all([
-        gatherData(output),
+        gatherData(output, baseBranches),
         deferredInit(output, toHTML),
     ]);
 })();
