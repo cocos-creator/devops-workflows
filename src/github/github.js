@@ -19,6 +19,9 @@ const graphql = require('@octokit/graphql').defaults({
         authorization: auth,
         'user-agent': ua
     },
+    request: {
+        timeout: 10000,
+    }
 });
 
 // init rest
@@ -47,7 +50,7 @@ const restClient = new Octokit({
 
 //
 
-const maxRetryCount = 3;
+const maxRetryCount = 5;
 async function request (cmd, variables, retry) {
     let res;
     try {
@@ -56,12 +59,12 @@ async function request (cmd, variables, retry) {
         // console.log(res);
     }
     catch (e) {
-        console.error(`${e.message}. Status: ${e.status}.`);
-        if (e.message.includes('ETIMEDOUT')) {
+        console.error(`  ${e.message}. Status: ${e.status}.`);
+        if (e.message.includes('ETIMEDOUT') || e.message.includes('network timeout at')) {
             retry = retry || 0;
-            if (++retry < maxRetryCount) {
+            if (++retry <= maxRetryCount) {
                 console.log(`    retry (${retry}/${maxRetryCount}) ...`);
-                return request(cmd, variables, retry + 1);
+                return request(cmd, variables, retry);
             }
         }
         console.error('  Request failed:', e.request);
