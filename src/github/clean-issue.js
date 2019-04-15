@@ -12,6 +12,8 @@ const server = require('./http-server');
 const settings = utils.getSettings();
 const title = 'Clean Cocos Creator Issues';
 
+const FIXED_RE = /已经?修复|(?:请|麻烦|下一?个版本)\S*(?:验证|测试|确认|试试|[测|试]看看)/;
+
 class DataToMarkdown extends DataToMarkdownBase {
     constructor (info) {
         super(info);
@@ -43,12 +45,20 @@ ${info}
     }
 }
 
-function isIssueCommitted (issue) {
+function isIssueFixed (issue) {
     let nodes = issue.timelineItems.nodes;
     if (nodes.some(x => x.__typename === 'CrossReferencedEvent' && x.source.state === 'OPEN')) {
         return false;
     }
-    return nodes.some(x => x.__typename === 'ReferencedEvent' || x.source.state === 'MERGED');
+    if (nodes.some(x => x.__typename === 'ReferencedEvent' || x.source.state === 'MERGED')) {
+        return true;
+    }
+    for (let comment of issue.comments.nodes) {
+        if (FIXED_RE.test(comment.bodyText)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 async function queryIssues (which, output) {
@@ -79,6 +89,11 @@ async function queryIssues (which, output) {
             # }
           }
         }
+        comments (last: 3) {
+          nodes {
+            bodyText
+          }
+        }
       }
       PageRes
     }
@@ -92,7 +107,7 @@ async function queryIssues (which, output) {
         let connection = res.repository.issues;
         let issues = connection.nodes;
         issues.forEach(issue => {
-            if (isIssueCommitted(issue)) {
+            if (isIssueFixed(issue)) {
                 output.write({ which, issue });
             }
         });
