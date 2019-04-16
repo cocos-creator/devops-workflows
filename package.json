@@ -4,7 +4,7 @@
   "description": "Workflows for creator team.",
   "main": "index.js",
   "scripts": {
-    "tag": "node src/tag",
+    "tag": "node src/github/tag",
     "upload": "node src/deploy upload",
     "download": "node src/download",
     "new-branch": "node src/github/new-branch",

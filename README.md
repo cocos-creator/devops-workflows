@@ -36,20 +36,6 @@ If you need, place your settings in `settings.js` to overwrite the default setti
 
 ## Commands
 
-**Tag Version**
-
-以下命令将会根据 fireball 下的 package.json 中的 version，自动给所有依赖的 repo（含 cocos2d-x-lite）打上 tag，并且推送到 cocos-creator 远端仓库。
-
-```bash
-npm run tag
-```
-
-以下命令将会根据指定路径下的 package.json 中的 version 来打 tag，并且推送到 cocos-creator 远端仓库。如果是 fireball 仓库，还会自动更新依赖的 repo（不含 cocos2d-x-lite）。
-
-```bash
-npm run tag -- --path path/to/repo
-```
-
 **Deploy Product**
 
 该命令会将文件上传到 FTP
@@ -162,3 +148,14 @@ npm run changelog -- -r recordVersion
 ```
 
 该命令不会收集改动列表，仅用于记录版本号对应的时间
+
+**Tag Version**
+
+```bash
+npm run tag tagName branch [repo]
+```
+
+此命令用于给所有仓库打上 tag。
+ - 如果 tagName 是一个 semver，并且以 "-xxx" 结尾，则 "-xxx" 将统一替换为 "-dev"，并且清除除了最新 5 个版本以外的所有以 "-dev" 结尾的 semver 的 tag。
+ - branch 用于指定当前要在哪个分支上创建 tag。
+ - 如果指定 repo，将只会给该 repo 更新 tag。repo 的格式为 "owner/name"，如 "cocos-creator/cocos2d-x-lite"。

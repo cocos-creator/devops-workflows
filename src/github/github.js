@@ -26,6 +26,7 @@ const graphql = require('@octokit/graphql').defaults({
 
 // init rest
 //   see: https://github.com/octokit/rest.js
+//        https://octokit.github.io/rest.js/
 
 const Octokit = require('@octokit/rest')
     .plugin(require('@octokit/plugin-throttling'));
@@ -101,10 +102,16 @@ async function requestFromAllPages (query, variables, getConnection) {
     return allNodes;
 }
 
-async function querySha (which) {
+async function querySha (which, tag) {
     let variables = which.toJSON();
-    variables.qualifiedName = `refs/heads/${which.branch}`;
-    console.log(`    querying sha of '${which}'`);
+    if (tag) {
+        variables.qualifiedName = `refs/tags/${tag}`;
+        console.log(`    querying sha of tag '${tag}' in '${which.owner}/${which.repo}'`);
+    }
+    else {
+        variables.qualifiedName = `refs/heads/${which.branch}`;
+        console.log(`    querying sha of '${which}'`);
+    }
     let res = await request(`query ($owner: String!, $repo: String!, $qualifiedName: String!) {
   repository(owner: $owner, name: $repo) {
     ref (qualifiedName: $qualifiedName) {
@@ -115,10 +122,10 @@ async function querySha (which) {
   }
 }`, variables);
     if (!res) {
-        throw `Failed to access ${which}`;
+        throw `Failed to access ${which.owner}/${which.repo}`;
     }
     if (!res.repository.ref) {
-        // branch does not exist
+        // ref does not exist
         return null;
     }
     return res.repository.ref.target.oid;
@@ -164,6 +171,55 @@ query branches ($owner: String!, $repo: String!, PageVarDef) {
     });
 
     return res;
+}
+
+async function queryTags (which) {
+    let query = `
+query tags ($owner: String!, $repo: String!, PageVarDef) {
+  repository(owner: $owner, name: $repo) {
+    refs(refPrefix: "refs/tags/", PageVar) {
+      nodes {
+        name
+      }
+      PageRes
+    }
+  }
+}`;
+    let variables = {
+        owner: which.owner,
+        repo: which.repo,
+    };
+    let res = await requestFromAllPages(query, variables, res => {
+        let repository = res.repository;
+        if (!repository) {
+            throw `Failed to access ${which.repo}, please check permission of the token`;
+        }
+        return repository.refs;
+    });
+    res = res.map(x => x.name);
+    return res;
+}
+
+async function updateTag (which, tag, sha) {
+    console.log(`  updating tag '${tag}' in ${which.owner}/${which.repo}`);
+    try {
+        let res = await restClient.git.updateRef({
+            owner: which.owner,
+            repo: which.repo,
+            ref: `tags/${tag}`,
+            sha,
+            force: true,
+        });
+    }
+    catch (e) {
+        if (e.message === 'Not Found' || e.message === 'Bad credentials') {
+            throw `Failed to access ${which.owner}/${which.repo}, please check permission of the token`;
+        }
+        else {
+            throw e;
+        }
+    }
+    return true;
 }
 
 async function _createRef (which, ref, sha) {
@@ -260,7 +316,6 @@ async function deleteBranch (which) {
             owner: which.owner,
             repo: which.repo,
             ref: `heads/${which.branch}`,
-            // ref: `tags/${which.branch}`,
         });
         // res.status === 204
         // res.data === undefined
@@ -268,6 +323,24 @@ async function deleteBranch (which) {
     catch (e) {
         if (e.status === 404) {
             console.error(`Branch ${which} not exists or don't have permission`);
+        }
+        throw e;
+    }
+}
+
+// 直接删除 Tag，不做任何检查
+async function deleteTag (which, tag) {
+    console.log(`  deleting tag ${tag} in ${which.owner}/${which.repo}`);
+    try {
+        await restClient.git.deleteRef({
+            owner: which.owner,
+            repo: which.repo,
+            ref: `tags/${tag}`,
+        });
+    }
+    catch (e) {
+        if (e.status === 404) {
+            console.error(`Tag ${tag} not exists in ${which.owner}/${which.repo} or don't have permission`);
         }
         throw e;
     }
@@ -370,9 +443,17 @@ const downloadUrlRE = /github\.com\/([^\/]+)\/([^\/]+).+\/(.+)\.zip$/;
 
 class Which {
     constructor (owner, repo, branch) {
-        this.owner = owner;
-        this.repo = repo;
-        this.branch = branch;
+        if (owner.includes('/')) {
+            let args = owner.split('/');
+            this.owner = args[0];
+            this.repo = args[1];
+            this.branch = args[2];
+        }
+        else {
+            this.owner = owner;
+            this.repo = repo;
+            this.branch = branch;
+        }
     }
     toString () {
         if (this.branch) {
@@ -424,6 +505,9 @@ module.exports = {
     mergeBranch,
     deleteBranch,
     hasBranchBeenMergedTo,
+    queryTags,
     createTag,
+    deleteTag,
+    updateTag,
     toDateTime,
 };
