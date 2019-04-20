@@ -76,8 +76,12 @@ function fillBranchInfo (branch) {
         branch.semver = semver.coerce(name);
         let patch = match[1];
         if (!patch) {
-            // v*.* 分支，被解析成了 v*.*.0，实际上应该是 v*.*.9999
+            // v*.* 分支，被解析成了 v*.*.0，实际上应该是 v*.*.max
             branch.semver.patch = Number.MAX_SAFE_INTEGER;
+            branch.loose = true;
+        }
+        else {
+            branch.loose = false;
         }
         branch.isMainChannel = true;
         branch.mainChannelOrder = SORT_ORDER.indexOf('__SEMVER__');
@@ -91,6 +95,7 @@ function fillBranchInfo (branch) {
         else {
             branch.mainChannelOrder = SORT_ORDER.indexOf('__FEATURE__');
         }
+        branch.loose = true;
     }
     return branch;
 }
@@ -132,16 +137,23 @@ function sortBranchesByUpdateTime (branches) {
     });
 }
 
-async function querySortedBranches (which) {
+async function queryBranchesSortedByTime (which) {
     let branches = await queryBranches(which);
     branches.forEach(fillBranchInfo);
     sortBranchesByUpdateTime(branches);
     return branches;
 }
 
+async function queryBranchesSortedByVersion (which) {
+    let branches = await queryBranches(which);
+    branches.forEach(fillBranchInfo);
+    sortBranchesByVersion(branches);
+    return branches;
+}
+
 async function queryDependReposFromAllBranches () {
     let fireball = getFireball(null);
-    let branches = await querySortedBranches(fireball);
+    let branches = await queryBranchesSortedByTime(fireball);
     branches = branches.filter(x => x.isMainChannel);
     let branchesToParseDep = branches.slice(-3).map(x => x.name);
     let endTimer = utils.timer(`query repos of [${branchesToParseDep}] in ${fireball}`);
@@ -210,6 +222,7 @@ class MarkdownToHTML extends Transform {
             openLinksInNewWindow: true,
         });
         this.converter.setFlavor('github');
+        this.converter.setOption('ghMentions', false);  // 防止标题出现 @ 时标题的链接会被打断
 
         this._headerRendered = false;
         this._ids = 0;
@@ -310,7 +323,8 @@ module.exports = {
     fillBranchInfo,
     sortBranchesByVersion,
     queryDependReposFromAllBranches,
-    querySortedBranches,
+    queryBranchesSortedByVersion,
+    queryBranchesSortedByTime,
     DataToMarkdownBase,
     MarkdownToHTML,
 };

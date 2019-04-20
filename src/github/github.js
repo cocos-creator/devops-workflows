@@ -277,6 +277,7 @@ async function mergeBranch (which, base, head) {
         }
     }
     catch (e) {
+        // HttpError: request to https://api.github.com/repos/cocos-creator/hello-world/merges failed, reason: connect EADDRNOTAVAIL 13.250.168.23:443 - Local (192.168.54.10:62006)
         if (e.status === 409) {
             // conflict
             return mergeBranch.Conflict;

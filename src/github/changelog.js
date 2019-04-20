@@ -6,9 +6,9 @@ const semver = require('semver');
 require('../global-init');
 const utils = require('../utils');
 const { Which, requestFromAllPages, toDateTime } = require('./github');
-const { getFireball, getMainPackage, querySortedBranches, parseDependRepos, MarkdownToHTML } = require('./utils');
+const { getFireball, getMainPackage, queryBranchesSortedByVersion, parseDependRepos, MarkdownToHTML, fillBranchInfo } = require('./utils');
 const storage = require('./storage');
-const storagePath = 'versions';
+const StoragePath = 'versions';
 
 const { Sort, DataToMarkdown } = require('./changelog-output');
 const server = require('./http-server');
@@ -20,47 +20,16 @@ const settings = utils.getSettings();
 const program = require('commander');
 program.option('-r, --record-version [version]', 'record the current time to the specified version');
 if (!process.argv[2].startsWith('-')) {
-    // branch (fromTime|fromVersion) ...
+    // branch [fromTime|fromVersion] ...
     program.branch = process.argv[2];
-    program.from = process.argv[3];
-    program.option('-t, --to <timeOrVersion>', 'before time like 2019-04-03T03:59:44 or version like 2.0.0-rc.1');
-    program.parse(process.argv);
-
     if (!program.branch) {
         throw 'Missing branch';
     }
-    if (!program.from) {
-        throw 'Missing fromTime or fromVersion';
+    if (process.argv[3] && !process.argv[3].startsWith('-')) {
+        program.from = process.argv[3];
     }
-    if (semver.valid(program.from)) {
-        program.fromVersion = semver.valid(program.from);
-    }
-    else {
-        program.fromTime = new Date(program.from);
-        if (!program.fromTime.getTime()) {
-            throw 'Invalid fromTime or fromVersion: ' + program.from;
-        }
-    }
-    if (program.to) {
-        if (semver.valid(program.to)) {
-            program.toVersion = semver.valid(program.to);
-        }
-        else {
-            program.toTime = new Date(program.to);
-            if (!program.toTime.getTime()) {
-                throw 'Invalid toTime or toVersion: ' + program.to;
-            }
-        }
-    }
-    if (typeof program.recordVersion === 'boolean') {
-        // version +1
-        if (program.fromVersion) {
-            program.recordVersion = program.fromVersion.replace(/\d+$/, m => Number(m) + 1);
-        }
-        else {
-            throw 'Missing recordVersion or fromVersion';
-        }
-    }
+    program.option('-t, --to <timeOrVersion>', 'before time like 2019-04-03T03:59:44 or version like 2.0.0-rc.1');
+    program.parse(process.argv);
 }
 else {
     // -r recordVersion
@@ -69,42 +38,39 @@ else {
         throw 'Missing recordVersion';
     }
 }
-if (program.recordVersion) {
-    if (program.to) {
-        throw 'Can not record version when toTime or toVersion is also specified';
-    }
-    program.recordVersion = semver.valid(program.recordVersion);
-    if (!semver.valid(program.recordVersion)) {
-        throw 'Invalid recordVersion: ' + program.recordVersion;
-    }
-}
 
 const REF_RE = /^(?:Re:|ref)\s*[^\s:]*\s+/i;
 
 async function queryPepo (which, from, to, output) {
 
-    // get branches to query
-
-    let branches = await querySortedBranches(which);
-    branches = branches.filter(x => x.isMainChannel);
-    branches = branches.map(x => x.name);
-    let index = branches.indexOf(which.branch);
-    if (index !== -1) {
-        branches = branches.slice(0, index + 1);
-        branches.reverse();
+    let branches;
+    if (from) {
+        // get branches to query
+        branches = await queryBranchesSortedByVersion(which);
+        branches = branches.filter(x => x.isMainChannel);
+        branches = branches.map(x => x.name);
+        let index = branches.indexOf(which.branch);
+        if (index !== -1) {
+            branches = branches.slice(0, index + 1);
+        }
+        else {
+            throw `Can not find ${which}`;
+        }
     }
     else {
-        throw `Can not find ${which}`;
+        // only query one branch
+        branches = [which.branch];
     }
-
-    // query
-    //   see https://help.github.com/en/articles/searching-issues-and-pull-requests
 
     const endTimer = utils.timer(`  query pull requests from ${which.owner}/${which.repo}`);
     let base = branches.map(x => `base:${x}`).join(' ');
 
     // query 不可以是 variable，否则会被转译，导致查询失败
-    let queryBy = `repo:${which.owner}/${which.repo} is:pr is:merged ${base} merged:>=${toDateTime(from)}`;
+    //   see https://help.github.com/en/articles/searching-issues-and-pull-requests
+    let queryBy = `repo:${which.owner}/${which.repo} is:pr is:merged ${base}`;
+    if (from) {
+        queryBy += ` merged:>=${toDateTime(from)}`;
+    }
 
     let query = `query PR (PageVarDef) {
   search(type: ISSUE, query: "${queryBy}", PageVar) {
@@ -169,6 +135,30 @@ async function gatherData (output) {
     let packageJson = JSON.parse(packageContent);
     let repos = [fireball].concat(parseDependRepos(packageJson));
 
+    if (!program.fromTime) {
+        // filter unmodified repo
+        let branchInfo = fillBranchInfo(program.branch);
+        function isSameVersion (value) {
+            if (!branchInfo.semver) {
+                return value.branch === program.branch;
+            }
+            let valueInfo = fillBranchInfo(value.branch);
+            if (!valueInfo.semver) {
+                return false;
+            }
+            if (branchInfo.loose || valueInfo.loose) {
+                return (branchInfo.semver.major === valueInfo.semver.major &&
+                        branchInfo.semver.minor === valueInfo.semver.minor);
+            }
+            else {
+                return (branchInfo.semver.major === valueInfo.semver.major &&
+                        branchInfo.semver.minor === valueInfo.semver.minor &&
+                        branchInfo.semver.patch === valueInfo.semver.patch);
+            }
+        }
+        repos = repos.filter(isSameVersion);
+    }
+
     // list pr
     // let promises = [fireball].map(x => queryPepo(x, program.fromTime, program.toTime, output));
     let promises = repos.map(x => queryPepo(x, program.fromTime, program.toTime, output));
@@ -187,7 +177,7 @@ async function deferredInit (output, toHTML) {
 }
 
 async function getVersionTime (version) {
-    let versions = await storage.get(storagePath);
+    let versions = await storage.get(StoragePath);
     let info = versions[version];
     if (info) {
         let date = new Date(info.utcTime);
@@ -204,7 +194,7 @@ async function getVersionTime (version) {
 async function recordVersionTime () {
     let version = program.recordVersion;
     console.log(`Record the current time to the specified version: ${version}`);
-    let versions = await storage.get(storagePath);
+    let versions = await storage.get(StoragePath);
     let info = versions[version];
     if (!info) {
         versions[version] = info = {};
@@ -212,7 +202,43 @@ async function recordVersionTime () {
     let date = new Date();
     info.time = date.toLocaleString();
     info.utcTime = date.getTime();
-    await storage.save(storagePath);
+    await storage.save(StoragePath);
+}
+
+async function getLastVersion (branch) {
+    let branchInfo = fillBranchInfo(branch);
+    var branchSemver = branchInfo.semver;
+    let range;
+    if (branchInfo.loose) {
+        // v0.0 or dev/master
+        range = new RegExp(`^${branchSemver.major}\.${branchSemver.minor}\.\d+`);
+    }
+    else {
+        // v0.0.0
+        range = new RegExp(`^${branchSemver.major}\.${branchSemver.minor}\.${branchSemver.patch}\b`);
+    }
+
+    let latestVersion = null;
+    let latestTime = null;
+    let versions = await storage.get(StoragePath);
+    for (let version in versions) {
+        if (!range.test(version)) {
+            continue;
+        }
+        let time = versions[version].utcTime;
+        if (!latestVersion || time > latestTime) {
+            latestVersion = version;
+            latestTime = time;
+        }
+    }
+
+    if (latestVersion) {
+        console.log(`Found last version ${latestVersion} from branch ${branch}`);
+    }
+    else {
+        console.log(`Can not find last version for branch ${branch}`);
+    }
+    return latestVersion;
 }
 
 async function listChangelog () {
@@ -229,20 +255,25 @@ async function listChangelog () {
 
     // show debug info
 
-    let info = `List merged pull requests on '${program.branch}'\nfrom`;
-    if (program.fromVersion) {
-        info += ` '${program.fromVersion}'`;
+    let info1 = `List merged pull requests on '${program.branch}'`;
+    let info2;
+    if (program.from) {
+        info2 = 'from';
+        if (program.fromVersion) {
+            info2 += ` '${program.fromVersion}'`;
+        }
+        info2 += ` (${program.fromTime.toLocaleString('zh-cn')})`;
     }
-    info += ` (${program.fromTime.toLocaleString('zh-cn')})`;
     if (program.to) {
-        info += ` to`;
+        info2 += ` to`;
         if (program.toVersion) {
-            info += ` '${program.toVersion}'`;
+            info2 += ` '${program.toVersion}'`;
         }
         if (program.toTime) {
-            info += ` (${program.toTime.toLocaleString('zh-cn')})`;
+            info2 += ` (${program.toTime.toLocaleString('zh-cn')})`;
         }
     }
+    let info = [info1, info2].filter(Boolean).join('\n');
     console.log(info);
     console.log(`You must ensure all version branches have been merged to '${program.branch}'`);
     console.log(`  (Or run 'npm run sync-branch')`);
@@ -269,6 +300,60 @@ async function listChangelog () {
 }
 
 (async function () {
+
+    // init args
+
+    if (program.branch) {
+        if (!program.from) {
+            program.from = await getLastVersion(program.branch);
+            if (!program.from) {
+                console.log('Will list all pull requests on the branch only');
+            }
+        }
+
+        if (semver.valid(program.from)) {
+            program.fromVersion = semver.valid(program.from);
+        }
+        else if (program.from) {
+            program.fromTime = new Date(program.from);
+            if (!Number.isFinite(program.fromTime.getTime())) {
+                throw 'Invalid fromTime or fromVersion: ' + program.from;
+            }
+        }
+
+        if (program.to) {
+            if (semver.valid(program.to)) {
+                program.toVersion = semver.valid(program.to);
+            }
+            else {
+                program.toTime = new Date(program.to);
+                if (!program.toTime.getTime()) {
+                    throw 'Invalid toTime or toVersion: ' + program.to;
+                }
+            }
+        }
+
+        if (typeof program.recordVersion === 'boolean') {
+            // version +1
+            if (program.fromVersion) {
+                program.recordVersion = program.fromVersion.replace(/\d+$/, m => Number(m) + 1);
+            }
+            else {
+                throw 'Missing recordVersion or fromVersion';
+            }
+        }
+    }
+
+    if (program.recordVersion) {
+        if (program.to) {
+            throw 'Can not record version when toTime or toVersion is also specified';
+        }
+        program.recordVersion = semver.valid(program.recordVersion);
+        if (!semver.valid(program.recordVersion)) {
+            throw 'Invalid recordVersion: ' + program.recordVersion;
+        }
+    }
+
     if (program.branch) {
         await listChangelog();
     }
