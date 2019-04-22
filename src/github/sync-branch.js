@@ -8,6 +8,7 @@ const { getFireball, queryDependReposFromAllBranches, sortBranchesByVersion, fil
 require('../global-init');
 const utils = require('../utils');
 
+let syncRepos = process.argv.length > 2 ? process.argv.slice(2) : null;
 
 async function syncBranch (which, branches) {
     if (!branches) {
@@ -28,7 +29,7 @@ async function syncBranch (which, branches) {
         // try to merge directly
         const res = await mergeBranch(which, newBranchName, oldBranchName);
         if (res === mergeBranch.Merged) {
-            console.log(`    merged on '${which.repo}', '${oldBranchName}' -> '${newBranchName}'`);
+            console.log(`  Merged on '${which.repo}', '${oldBranchName}' -> '${newBranchName}'`);
         }
         else if (res === mergeBranch.Conflict) {
             // checks if merged to newer branches
@@ -58,11 +59,17 @@ async function syncBranch (which, branches) {
 
     let fireball = getFireball(null);
     let { repos, branches } = await queryDependReposFromAllBranches();
+    if (syncRepos) {
+        repos = repos.filter(x => syncRepos.includes(x.repo));
+    }
 
     // sync
 
     let endTimer = utils.timer(`synchronize repos`);
-    let promises = [syncBranch(fireball, branches)];
+    let promises = [];
+    if (!syncRepos || syncRepos.includes(fireball.repo)) {
+        promises.push(syncBranch(fireball, branches));
+    }
     promises = promises.concat(repos.map(x => syncBranch(x)));
     let status = await Promise.all(promises);
     endTimer();

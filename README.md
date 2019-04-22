@@ -111,10 +111,11 @@ npm run clean-issue
 **Sync Branch**
 
 ```bash
-npm run sync-branch
+npm run sync-branch [...repos]
 ```
 
 该命令会自动同步所有 GitHub 上的所有开发分支（按版本顺序依次合并改动），需要同步的仓库将从 fireball 最新若干个分支中的 package.json 收集而来。
+ - repos 允许指定只同步哪些仓库。以空格隔开，如 `npm run sync-branch fireball engine`
 
 **Delete Branch**
 
