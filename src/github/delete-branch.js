@@ -10,10 +10,10 @@ const utils = require('../utils');
 const program = require('commander');
 (function initArgs () {
     program
-    .option('-b, --branch <branch>', 'Delete branch')
     .option('--df, --delete-feature', 'Force the deletion of a feature branch')
     .option('--du, --delete-unmerged', 'Force the deletion of an unmerged branch')
     .parse(process.argv);
+    program.branch = process.argv[2];
 
     if (!program.deleteFeature) {
         let branch = fillBranchInfo(program.branch);
@@ -94,7 +94,7 @@ async function reopenPullRequests (which, prs) {
         };
         for (let pr of prs) {
             variables.input.pullRequestId = pr.id;
-            console.warn(`  Reopen pull request of '${which}': ${pr.url}`);
+            console.warn(chalk.yellow(`  Reopen pull request of '${which}': ${pr.url}`));
             await request(mutation, variables);
         }
     }
@@ -135,7 +135,7 @@ async function processBranch (which) {
             let merged = await hasBranchBeenMergedTo(which, branch, restBranches);
             if (!merged) {
                 console.warn(`  Can not delete unmerged branch '${which}', add parameter --du to force delete`);
-                endTimer();
+                // endTimer();
                 return { status: processBranch.BranchUnmerged, which };
             }
         }
@@ -186,8 +186,9 @@ processBranch.BranchUnmerged = Object.create(null);
 
     status = status.filter(x => x && x.status === processBranch.BranchUnmerged);
     if (status.length > 0) {
+        console.log('');
         for (let info of status) {
-            console.error(`  Can not delete unmerged branch '${info.which}', add parameter --du to force delete`);
+            console.error(chalk.red(`  Can not delete unmerged branch '${info.which}', add parameter --du to force delete`));
         }
     }
 })();

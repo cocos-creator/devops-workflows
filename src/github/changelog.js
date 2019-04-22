@@ -211,11 +211,11 @@ async function getLastVersion (branch) {
     let range;
     if (branchInfo.loose) {
         // v0.0 or dev/master
-        range = new RegExp(`^${branchSemver.major}\.${branchSemver.minor}\.\d+`);
+        range = new RegExp(`^${branchSemver.major}\\.${branchSemver.minor}\\.\\d+`);
     }
     else {
         // v0.0.0
-        range = new RegExp(`^${branchSemver.major}\.${branchSemver.minor}\.${branchSemver.patch}\b`);
+        range = new RegExp(`^${branchSemver.major}\\.${branchSemver.minor}\\.${branchSemver.patch}\\b`);
     }
 
     let latestVersion = null;

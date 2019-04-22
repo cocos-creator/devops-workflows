@@ -299,7 +299,10 @@ async function compareBranches (which, base, head) {
             base,
             head,
         });
-        // res.data.status === 'behind|diverged|ahead';
+        // res.data.status === 'behind|diverged|ahead|identical';
+        // if (head === 'v2.1.1-release' || base === 'v2.1.1-release') {
+        //     console.log(res.data);
+        // }
         return res.data.status;
     }
     catch (e) {
@@ -387,10 +390,13 @@ async function hasBranchBeenMergedTo (which, branch, otherBranches) {
             // console.log(`${branch.name} updated behind ${x.name}`);
             return Promise.resolve('not-behind');
         }
+        else if (branch.commit.oid === x.commit.oid) {
+            return Promise.resolve('identical');
+        }
         else {
             return compareBranches(which, x.name, branch.name);
         }
-    }, status => status === 'behind', 6);
+    }, status => status === 'behind' || status === 'identical', 6);
 }
 
 async function _queryBlob (which, path, field) {

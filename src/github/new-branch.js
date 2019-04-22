@@ -5,37 +5,29 @@ require('../global-init');
 const { Which, querySha, createBranch, commit } = require('./github');
 const { getFireball, getMainPackage, parseDependRepos } = require('./utils');
 
-const program = require('commander');
 
-(function initArgs () {
-    program
-        .option('-b, --baseAndNewBranch <baseBranch,newBranch>', 'Create new branches', val => val.split(','))
-        .parse(process.argv);
-    // console.log(program.baseAndNewBranch);
-    program.baseBranch = program.baseAndNewBranch[0];
-    program.newBranch = program.baseAndNewBranch[1];
-    if (program.baseBranch === program.newBranch) {
-        console.log(`Invalid branches, they must be difference`);
-        process.exit(0);
-    }
-    if (program.newBranch.endsWith('-release')) {
-        if (program.baseBranch + '-release' !== program.newBranch) {
-            console.warn(`Create release branch "${chalk.yellow(program.newBranch)}" from "${chalk.yellow(program.baseBranch)}"`);
-        }
-        else {
-            console.log(`Create release branch "${program.newBranch}" from "${program.baseBranch}"`);
-        }
+let baseBranch = process.argv[2];
+let newBranch = process.argv[3];
+
+if (baseBranch === newBranch) {
+    console.log(`Invalid branches, they must be difference`);
+    process.exit(0);
+}
+if (newBranch.endsWith('-release')) {
+    if (baseBranch + '-release' !== newBranch) {
+        console.warn(`Create release branch "${chalk.yellow(newBranch)}" from "${chalk.yellow(baseBranch)}"`);
     }
     else {
-        console.log(`Create normal branch "${program.newBranch}" from "${program.baseBranch}"`);
+        console.log(`Create release branch "${newBranch}" from "${baseBranch}"`);
     }
-    // if (program.baseBranch && program.newBranch) {
-    // }
-})();
+}
+else {
+    console.log(`Create normal branch "${newBranch}" from "${baseBranch}"`);
+}
 
 
 function bumpDependRepos (packageContent, packageJson) {
-    const { builtin, hosts, templates } = packageJson;
+    const { builtin, hosts, templates, externDefs } = packageJson;
 
     // use replace to ensure line ending will not changed or it will be formated by JSON
     function replace (oldText, newText) {
@@ -49,7 +41,7 @@ function bumpDependRepos (packageContent, packageJson) {
     function bumpRepos (repos) {
         return repos.map(entry => {
             let [repo, branch] = entry.split('#');
-            replace(`"${entry}"`, `"${repo}#${program.newBranch}"`);
+            replace(`"${entry}"`, `"${repo}#${newBranch}"`);
         });
     }
 
@@ -60,9 +52,14 @@ function bumpDependRepos (packageContent, packageJson) {
         let url = templates[key];
         let entry = Which.fromDownloadUrl(url);
         if (entry) {
-            entry.branch = program.newBranch;
+            entry.branch = newBranch;
             replace(url, entry.toDownloadUrl());
         }
+    }
+
+    if (externDefs) {
+        let oldBranch = externDefs['cocos2d-x_branch'];
+        replace(`"cocos2d-x_branch": "${oldBranch}"`, `"cocos2d-x_branch": "${newBranch}"`);
     }
 
     return packageContent;
@@ -70,12 +67,15 @@ function bumpDependRepos (packageContent, packageJson) {
 
 (async function () {
 
-    let fireballBase = getFireball(program.baseBranch);
-    let fireballNew = getFireball(program.newBranch);
+    let fireballBase = getFireball(baseBranch);
+    let fireballNew = getFireball(newBranch);
 
     // create new fireball branch
 
     let sha = await querySha(fireballBase);
+    if (!sha) {
+        throw `Can not find ref of ${fireballBase}`;
+    }
     let created = await createBranch(fireballNew, sha);
     if (!created) {
         console.warn(chalk.yellow(`Branch (${fireballNew}) already exists. Parse dependencies based on new branch.`));
@@ -91,7 +91,7 @@ function bumpDependRepos (packageContent, packageJson) {
 
     for (let which of repos) {
         let sha = await querySha(which);
-        which.branch = program.newBranch;
+        which.branch = newBranch;
         let created = await createBranch(which, sha);
         if (!created) {
             console.warn(chalk.yellow(`Branch (${which}) already exists. Update the reference if you need.`));
@@ -104,7 +104,7 @@ function bumpDependRepos (packageContent, packageJson) {
 
     // commit package.json
 
-    let commitMsg = `Switch dependencies to ${program.newBranch}`;
+    let commitMsg = `Switch dependencies to ${newBranch}`;
     await commit(fireballNew, 'package.json', new Buffer(packageContent), commitMsg);
 
     console.log(`Finished create branch`);

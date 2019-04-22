@@ -69,7 +69,7 @@ npm run download -- --url https://github.com/cocos-creator/hello-world/archive/v
 该命令会在所有仓库中创建新分支
 
 ```bash
-npm run new-branch -- -b oldBranch,newBranch
+npm run new-branch -- oldBranch newBranch
 ```
 
 步骤如下
@@ -120,7 +120,7 @@ npm run sync-branch [...repos]
 **Delete Branch**
 
 ```bash
-npm run delete-branch -- -b branch [--df] [--du]
+npm run delete-branch -- branch [--df] [--du]
 ```
 
 该命令会删除 GitHub 仓库上的指定分支，需要同步的仓库将从 fireball 最新若干个分支中的 package.json 收集而来。
