@@ -49,7 +49,7 @@ function parseDependRepos (package) {
         cocos2dx.branch = externDefs['cocos2d-x_branch'];
     }
     else {
-        throw 'Unknown branch of cocos2d-x-lite';
+        // ignore old branch
     }
     repos.push(cocos2dx);
 

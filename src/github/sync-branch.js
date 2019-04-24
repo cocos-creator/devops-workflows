@@ -3,7 +3,7 @@ const semver = require('semver');
 const chalk = require('chalk');
 const _ = require('lodash');
 
-const { Which, mergeBranch, queryBranches, hasBranchBeenMergedTo } = require('./github');
+const { Which, mergeBranch, queryBranches, hasBranchBeenMergedTo, updateBranch } = require('./github');
 const { getFireball, queryDependReposFromAllBranches, sortBranchesByVersion, fillBranchInfo } = require('./utils');
 require('../global-init');
 const utils = require('../utils');
@@ -23,15 +23,30 @@ async function syncBranch (which, branches) {
 
     for (let i = 0; i < branches.length - 1; i++) {
         let oldBranch = branches[i];
+        let newBranch = branches[i + 1];
         let oldBranchName = oldBranch.name;
-        let newBranchName = branches[i + 1].name;
+        let newBranchName = newBranch.name;
+
+        if (newBranch.commit.oid === oldBranch.commit.oid) {
+            if (oldBranch.newCommitSha) {
+                // were identical, just fast-forward
+                console.log(`  Fast-forward on '${which.repo}', '${newBranchName}' -> '${oldBranchName}'`);
+                newBranch.newCommitSha = oldBranch.newCommitSha;
+                await updateBranch(new Which(which.owner, which.repo, newBranchName), newBranch.newCommitSha);
+            }
+            else {
+                // identical, no need to merge
+            }
+            continue;
+        }
 
         // try to merge directly
         const res = await mergeBranch(which, newBranchName, oldBranchName);
-        if (res === mergeBranch.Merged) {
+        if (res.status === mergeBranch.Merged) {
             console.log(`  Merged on '${which.repo}', '${oldBranchName}' -> '${newBranchName}'`);
+            newBranch.newCommitSha = res.sha;
         }
-        else if (res === mergeBranch.Conflict) {
+        else if (res.status === mergeBranch.Conflict) {
             // checks if merged to newer branches
             let newBranches = branches.slice(i + 2);
             let mergedTo = await hasBranchBeenMergedTo(which, oldBranch, newBranches);

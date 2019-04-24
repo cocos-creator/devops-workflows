@@ -200,15 +200,14 @@ query tags ($owner: String!, $repo: String!, PageVarDef) {
     return res;
 }
 
-async function updateTag (which, tag, sha) {
-    console.log(`  updating tag '${tag}' in ${which.owner}/${which.repo}`);
+async function _updateRef (which, ref, sha, force) {
     try {
-        let res = await restClient.git.updateRef({
+        await restClient.git.updateRef({
             owner: which.owner,
             repo: which.repo,
-            ref: `tags/${tag}`,
+            ref,
             sha,
-            force: true,
+            force,
         });
     }
     catch (e) {
@@ -219,7 +218,16 @@ async function updateTag (which, tag, sha) {
             throw e;
         }
     }
-    return true;
+}
+
+async function updateTag (which, tag, sha) {
+    console.log(`  updating tag '${tag}' in ${which.owner}/${which.repo}`);
+    return _updateRef(which, `tags/${tag}`, sha, true);
+}
+
+async function updateBranch (which, sha) {
+    console.log(`  updating branch '${which.branch}' in ${which.owner}/${which.repo}`);
+    return _updateRef(which, `heads/${which.branch}`, sha, false);
 }
 
 async function _createRef (which, ref, sha) {
@@ -269,18 +277,25 @@ async function mergeBranch (which, base, head) {
         // console.log(res);
         if (res.status === 204) {
             // base already contains the head, nothing to merge
-            return mergeBranch.Noop;
+            return {
+                status: mergeBranch.Noop,
+            };
         }
         else {
-            // merged
-            return mergeBranch.Merged;
+            // merged, return new commit
+            return {
+                status: mergeBranch.Merged,
+                sha: res.data.sha,
+            };
         }
     }
     catch (e) {
         // HttpError: request to https://api.github.com/repos/cocos-creator/hello-world/merges failed, reason: connect EADDRNOTAVAIL 13.250.168.23:443 - Local (192.168.54.10:62006)
         if (e.status === 409) {
             // conflict
-            return mergeBranch.Conflict;
+            return {
+                status: mergeBranch.Conflict
+            };
         }
         throw e;
     }
@@ -511,6 +526,7 @@ module.exports = {
     createBranch,
     mergeBranch,
     deleteBranch,
+    updateBranch,
     hasBranchBeenMergedTo,
     queryTags,
     createTag,
