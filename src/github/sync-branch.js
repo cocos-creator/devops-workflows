@@ -7,6 +7,7 @@ const { Which, mergeBranch, queryBranches, hasBranchBeenMergedTo, updateBranch }
 const { getFireball, queryDependReposFromAllBranches, sortBranchesByVersion, fillBranchInfo } = require('./utils');
 require('../global-init');
 const utils = require('../utils');
+const settings = utils.getSettings();
 
 let syncRepos = process.argv.length > 2 ? process.argv.slice(2) : null;
 
@@ -43,7 +44,7 @@ async function syncBranch (which, branches) {
         // try to merge directly
         const res = await mergeBranch(which, newBranchName, oldBranchName);
         if (res.status === mergeBranch.Merged) {
-            console.log(`  Merged on '${which.repo}', '${oldBranchName}' -> '${newBranchName}'`);
+            console.log(chalk.cyan(`Merged on '${which.repo}', '${oldBranchName}' -> '${newBranchName}'`));
             newBranch.newCommitSha = res.sha;
         }
         else if (res.status === mergeBranch.Conflict) {
@@ -74,6 +75,9 @@ async function syncBranch (which, branches) {
 
     let fireball = getFireball(null);
     let { repos, branches } = await queryDependReposFromAllBranches();
+    // sync document
+    repos.push(new Which(settings.creatorGithub.owner, 'creator-docs'));
+
     if (syncRepos) {
         repos = repos.filter(x => syncRepos.includes(x.repo));
     }
