@@ -120,14 +120,14 @@ npm run sync-branch [...repos]
 **Delete Branch**
 
 ```bash
-npm run delete-branch -- branch [--df] [--du]
+npm run delete-branch -- branch [subsequentBranch] [--df] [--du]
 ```
 
 该命令会删除 GitHub 仓库上的指定分支，需要同步的仓库将从 fireball 最新若干个分支中的 package.json 收集而来。
  - '--df' 命令用于强制删除功能分支
  - '--du' 命令用于强制删除未合并的分支
 
-分支删除后，将会打上 tag 用于标记位置。如果该分支有未合并的 PR，删除分支后将会自动还原 PR，并且进行相应回复。
+分支删除后，将会打上 tag 用于标记位置。如果该分支有未合并的 PR，会将 PR 的目标分支修改为 subsequentBranch，未指定 subsequentBranch 将终止合并。
 
 **Changelog**
 

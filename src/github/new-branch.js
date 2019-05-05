@@ -91,6 +91,9 @@ function bumpDependRepos (packageContent, packageJson) {
 
     for (let which of repos) {
         let sha = await querySha(which);
+        if (!sha) {
+            throw `Can not find ref of ${which}, check the dependencies please.`;
+        }
         which.branch = newBranch;
         let created = await createBranch(which, sha);
         if (!created) {
