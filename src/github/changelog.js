@@ -6,7 +6,7 @@ const semver = require('semver');
 require('../global-init');
 const utils = require('../utils');
 const { Which, requestFromAllPages, toDateTime } = require('./github');
-const { getFireball, getMainPackage, queryBranchesSortedByVersion, parseDependRepos, MarkdownToHTML, fillBranchInfo } = require('./utils');
+const { getFireball, getMainPackage, compareBranchesByVersion, parseDependRepos, MarkdownToHTML, fillBranchInfo } = require('./utils');
 const storage = require('./storage');
 const StoragePath = 'versions';
 
@@ -40,37 +40,37 @@ else {
 }
 
 const REF_RE = /^(?:Re:|ref)\s*[^\s:]*\s+/i;
+const PREFIX_RE = /^(?:Changelog:|Changes:)/i;
 
 async function queryPepo (which, from, to, output) {
 
-    let branches;
-    if (from) {
-        // get branches to query
-        branches = await queryBranchesSortedByVersion(which);
-        branches = branches.filter(x => x.isMainChannel);
-        branches = branches.map(x => x.name);
-        let index = branches.indexOf(which.branch);
-        if (index !== -1) {
-            branches = branches.slice(0, index + 1);
-        }
-        else {
-            throw `Can not find ${which}`;
-        }
-    }
-    else {
-        // only query one branch
-        branches = [which.branch];
-    }
+    // Only query old branches
+    // let branches;
+    // if (from) {
+    //     // get branches to query
+    //     branches = await queryBranchesSortedByVersion(which);
+    //     branches = branches.filter(x => x.isMainChannel);
+    //     branches = branches.map(x => x.name);
+    //     let index = branches.indexOf(which.branch);
+    //     if (index !== -1) {
+    //         branches = branches.slice(0, index + 1);
+    //     }
+    //     else {
+    //         throw `Can not find ${which}`;
+    //     }
+    // }
+    // else {
+    //     // only query one branch
+    //     branches = [which.branch];
+    // }
+    // let base = branches.map(x => `base:${x}`).join(' ');
 
     const endTimer = utils.timer(`  query pull requests from ${which.owner}/${which.repo}`);
-    let base = branches.map(x => `base:${x}`).join(' ');
-
+    let condition = from ? `merged:>=${toDateTime(from)}` : `base:${which.branch}`;
+    
     // query 不可以是 variable，否则会被转译，导致查询失败
     //   see https://help.github.com/en/articles/searching-issues-and-pull-requests
-    let queryBy = `repo:${which.owner}/${which.repo} is:pr is:merged ${base}`;
-    if (from) {
-        queryBy += ` merged:>=${toDateTime(from)}`;
-    }
+    let queryBy = `repo:${which.owner}/${which.repo} is:pr is:merged ${condition}`;
 
     let query = `query PR (PageVarDef) {
   search(type: ISSUE, query: "${queryBy}", PageVar) {
@@ -109,13 +109,27 @@ async function queryPepo (which, from, to, output) {
 
     prs = _(prs);
     if (to) {
+        // Filter by time
         let toTime = to.getTime();
         prs = prs.filter(x => (new Date(x.mergedAt).getTime() <= toTime));
+    }
+    if (from) {
+        // Filter by branch
+        let currentBranchInfo = fillBranchInfo(which.branch);
+        prs = prs.filter(x => {
+            if (x.baseRefName === 'v2.0-release' || x.baseRefName === 'v2.0') {
+                // HACK: 临时处理特殊分支
+                return true;
+            }
+            let prBranchInfo = fillBranchInfo(x.baseRefName);
+            // console.log(which.branch + ' ' + x.baseRefName + ' ' + compareBranchesByVersion(currentBranchInfo, prBranchInfo));
+            return compareBranchesByVersion(currentBranchInfo, prBranchInfo) >= 0;
+        });
     }
     prs.forEach(pr => {
         let author = pr.author;
         author.name = settings.usernames[author.login] || author.login;
-        pr.bodyText = pr.bodyText.replace(REF_RE, '');
+        pr.bodyText = pr.bodyText.replace(REF_RE, '').replace(PREFIX_RE, '');
         output.write({
             which: new Which(which.owner, which.repo, pr.baseRefName),
             pr
@@ -199,7 +213,7 @@ async function recordVersionTime () {
     if (!info) {
         versions[version] = info = {};
     }
-    let date = new Date();
+    let date = program.toTime || new Date();
     info.time = date.toLocaleString();
     info.utcTime = date.getTime();
     await storage.save(StoragePath);
@@ -345,9 +359,6 @@ async function listChangelog () {
     }
 
     if (program.recordVersion) {
-        if (program.to) {
-            throw 'Can not record version when toTime or toVersion is also specified';
-        }
         program.recordVersion = semver.valid(program.recordVersion);
         if (!semver.valid(program.recordVersion)) {
             throw 'Invalid recordVersion: ' + program.recordVersion;

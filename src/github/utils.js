@@ -100,35 +100,40 @@ function fillBranchInfo (branch) {
     return branch;
 }
 
+function compareBranchesByVersion (lhs, rhs) {
+    let res = lhs.mainChannelOrder - rhs.mainChannelOrder;
+    if (res !== 0) {
+        return res;
+    }
+    else if (lhs.semver && rhs.semver) {
+        // both 0
+        if (semver.gt(lhs.semver, rhs.semver)) {
+            return 1;
+        }
+        else if (semver.lt(lhs.semver, rhs.semver)) {
+            return -1;
+        }
+        else if (lhs.name === rhs.name) {
+            return 0;
+        }
+        else if (rhs.name.endsWith('-release')) {
+            return -1;
+        }
+        else {
+            return 1;
+        }
+    }
+    else {
+        // both -1
+        return lhs.name.localeCompare(rhs.name);
+    }
+}
+
 function sortBranchesByVersion (branches) {
     // 排序分支，提高命中率。
     //   一般我们删除的都会是最旧的版本分支，所以先从旧往新排序
     //   通常功能分支比较独立，所以可以放到最后再判断
-    branches.sort((lhs, rhs) => {
-        let res = lhs.mainChannelOrder - rhs.mainChannelOrder;
-        if (res !== 0) {
-            return res;
-        }
-        else if (lhs.semver && rhs.semver) {
-            // both 0
-            if (semver.gt(lhs.semver, rhs.semver)) {
-                return 1;
-            }
-            else if (semver.lt(lhs.semver, rhs.semver)) {
-                return -1;
-            }
-            else if (rhs.name.endsWith('-release')) {
-                return 1;
-            }
-            else {
-                return -1;
-            }
-        }
-        else {
-            // both -1
-            return lhs.name.localeCompare(rhs.name);
-        }
-    });
+    branches.sort(compareBranchesByVersion);
 }
 
 function sortBranchesByUpdateTime (branches) {
@@ -321,6 +326,7 @@ module.exports = {
     getMainPackage,
     parseDependRepos,
     fillBranchInfo,
+    compareBranchesByVersion,
     sortBranchesByVersion,
     queryDependReposFromAllBranches,
     queryBranchesSortedByVersion,
