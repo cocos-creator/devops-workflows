@@ -33,7 +33,7 @@ if (process.platform === 'darwin') {
     module.exports = getUnzip('unzip');
 }
 else if (process.platform === 'win32') {
-    module.exports = getUnzip('editor\\static\\tools\\unzip.exe');
+    module.exports = getUnzip(Path.join(__dirname, '..\\tools\\unzip.exe'));
 }
 else {
     module.exports = function (src, dist) {
