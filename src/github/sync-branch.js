@@ -3,7 +3,7 @@ const semver = require('semver');
 const chalk = require('chalk');
 const _ = require('lodash');
 
-const { Which, mergeBranch, queryBranches, hasBranchBeenMergedTo, updateBranch } = require('./github');
+const { Which, mergeBranch, queryBranches, hasBeenMergedTo, updateBranch } = require('./github');
 const { getFireball, queryDependReposFromAllBranches, sortBranchesByVersion, fillBranchInfo } = require('./utils');
 require('../global-init');
 const utils = require('../utils');
@@ -28,12 +28,16 @@ async function syncBranch (which, branches) {
         let oldBranchName = oldBranch.name;
         let newBranchName = newBranch.name;
 
-        if (newBranch.commit.oid === oldBranch.commit.oid) {
-            if (oldBranch.newCommitSha) {
-                // were identical, just fast-forward
+        // reverse compare branch to check whether it is possible to fast-forward
+        let merged = await hasBeenMergedTo(which, newBranch, [oldBranch]);
+        if (merged) {
+            console.assert(merged === oldBranch);
+
+            let moveTo = oldBranch.newCommitSha || oldBranch.commit.oid;
+            if (newBranch.commit.oid !== moveTo) {
                 console.log(`  Fast-forward on '${which.repo}', '${newBranchName}' -> '${oldBranchName}'`);
-                newBranch.newCommitSha = oldBranch.newCommitSha;
-                await updateBranch(new Which(which.owner, which.repo, newBranchName), newBranch.newCommitSha);
+                newBranch.newCommitSha = moveTo;
+                await updateBranch(new Which(which.owner, which.repo, newBranchName), moveTo);
             }
             else {
                 // identical, no need to merge
@@ -50,7 +54,7 @@ async function syncBranch (which, branches) {
         else if (res.status === mergeBranch.Conflict) {
             // checks if merged to newer branches
             let newBranches = branches.slice(i + 2);
-            let mergedTo = await hasBranchBeenMergedTo(which, oldBranch, newBranches);
+            let mergedTo = await hasBeenMergedTo(which, oldBranch, newBranches);
             if (mergedTo) {
                 console.log(`    '${which.repo}/${oldBranchName}' has previously been merged into '${mergedTo.name}', cancel merge to '${newBranchName}'.`);
             }

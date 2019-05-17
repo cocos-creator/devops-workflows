@@ -306,6 +306,14 @@ mergeBranch.Conflict = new Object();
 mergeBranch.Noop = new Object();
 
 async function compareBranches (which, base, head) {
+    if (typeof base === 'object' && typeof head === 'object') {
+        if (head.commit.oid === base.commit.oid) {
+            return 'identical';
+        }
+        base = base.name;
+        head = head.name;
+    }
+
     console.log(`    comparing branch ${head} with ${base}`);
     try {
         const res = await restClient.repos.compareCommits({
@@ -399,17 +407,14 @@ async function findResLimit (array, runTask, test, limit) {
 }
 
 // 判断一个分支是否已经包含在其它分支中
-async function hasBranchBeenMergedTo (which, branch, otherBranches) {
+async function hasBeenMergedTo (which, branch, otherBranches) {
     return await findResLimit(otherBranches, x => {
         if (branch.updatedAt > x.updatedAt) {
             // console.log(`${branch.name} updated behind ${x.name}`);
             return Promise.resolve('not-behind');
         }
-        else if (branch.commit.oid === x.commit.oid) {
-            return Promise.resolve('identical');
-        }
         else {
-            return compareBranches(which, x.name, branch.name);
+            return compareBranches(which, x, branch);
         }
     }, status => status === 'behind' || status === 'identical', 6);
 }
@@ -527,7 +532,7 @@ module.exports = {
     mergeBranch,
     deleteBranch,
     updateBranch,
-    hasBranchBeenMergedTo,
+    hasBeenMergedTo,
     queryTags,
     createTag,
     deleteTag,
