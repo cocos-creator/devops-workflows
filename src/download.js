@@ -32,14 +32,20 @@ async function download(url, dir, retryTimes = 5) {
         tooltip(Chalk.grey(`downloading "${Chalk.white(url)}"`));
     }
 
+    let args = {
+        filename: basename(url),
+        mode: '755',
+        extract: false,        // 文件如果太大，不能用 node.js 解压，不然各种奇葩 bug
+        strip: 0,
+        proxy
+    };
+
+    if (!proxy) {
+        args.agent = null;     // 强制禁用 proxy 参数，否则会读取到 npm 设置的参数，导致无法下载内网资源
+    }
+
     try {
-        await Download(url, dir, {
-            filename: basename(url),
-            mode: '755',
-            extract: false,     // 文件如果太大，不能用 node.js 解压，不然各种奇葩 bug
-            strip: 0,
-            proxy
-        });
+        await Download(url, dir, args);
     }
     catch (err) {
         if (err.statusCode !== 404) {
