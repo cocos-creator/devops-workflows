@@ -333,4 +333,5 @@ module.exports = {
     queryBranchesSortedByTime,
     DataToMarkdownBase,
     MarkdownToHTML,
+    UNIQ_BRANCH_PREFIX : 'deleted-branch-',
 };

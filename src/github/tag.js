@@ -1,9 +1,10 @@
 'use strict';
 
 const semver = require('semver');
+const groupBy = require('lodash/groupBy');
 require('../global-init');
 const { Which, queryTags, querySha, deleteTag, createTag, updateTag } = require('./github');
-const { getFireball, getMainPackage, parseDependRepos } = require('./utils');
+const { getFireball, getMainPackage, parseDependRepos, UNIQ_BRANCH_PREFIX } = require('./utils');
 
 const RESERVE_DEV_TAG_COUNT = 4;
 const PRERELEASE_RE = /-.+$/;
@@ -55,8 +56,67 @@ async function cleanDevTags (which, tags, reserveCount) {
     }
 }
 
-async function processRepo (which, tag) {
+async function cleanTags (which) {
     let tags = await queryTags(which);
+    let versions = groupBy(tags, ({ name }) => {
+        if (name.startsWith('3d-') || name.endsWith('-dev')) {
+            return name;
+        }
+        if (name.startsWith(UNIQ_BRANCH_PREFIX)) {
+            name = name.slice(UNIQ_BRANCH_PREFIX.length);
+        }
+
+        let sv = semver.parse(name);
+        if (sv) {
+            return `${sv.major}.${sv.minor}.${sv.patch}`;
+        }
+        else {
+            return name;
+        }
+    });
+
+    for (let ver in versions) {
+        let sameVerTags = versions[ver];
+        if (sameVerTags.length > 1) {
+            if (sameVerTags[0].commit.oid === sameVerTags[1].commit.oid) {
+                if (sameVerTags[0].name.length > sameVerTags[1].name.length) {
+                    console.log('  remove ' + sameVerTags[0].name + ' in ' + which);
+                    await deleteTag(which, sameVerTags[0].name);
+                }
+                else {
+                    console.log('  remove ' + sameVerTags[1].name + ' in ' + which);
+                    await deleteTag(which, sameVerTags[1].name);
+                }
+            }
+            // choose best, 将最符合需求的排在第一位
+            // sameVerTags.sort((lhs, rhs) => {
+            //     // if (lhs.commit.oid === rhs.commit.oid) {
+            //     //     // 如果是同一个提交，取名字短的
+            //     //     return lhs.name.length - rhs.name.length;
+            //     // }
+            //     let timeL = (new Date(lhs.commit.pushedDate)).getTime();
+            //     let timeR = (new Date(rhs.commit.pushedDate)).getTime();
+            //     let res = timeR - timeL;
+            //     if (res === 0) {
+            //         // 如果是同一个提交，取名字短的
+            //         res = lhs.name.length - rhs.name.length;
+            //         if (res === 0) {
+            //             // 应该不会有这种情况出现
+            //             res = lhs.name.localeCompare(rhs.name);
+            //         }
+            //     }
+            //     return res;
+            // });
+            console.log(which);
+            console.log(sameVerTags);
+        }
+    }
+}
+
+async function processRepo (which, tag) {
+    // return cleanTags(which);
+    let tags = await queryTags(which);
+    tags = tags.map(x => x.name);
 
     // clean same version tag
     if (isDevTag) {

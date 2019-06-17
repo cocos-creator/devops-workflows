@@ -61,7 +61,8 @@ async function request (cmd, variables, retry) {
     }
     catch (e) {
         console.error(`  ${e.message}. Status: ${e.status}.`);
-        if (e.message.includes('ETIMEDOUT') || e.message.includes('network timeout at')) {
+        if (e.message.includes('ETIMEDOUT') || e.message.includes('network timeout at') ||
+            e.message.includes('getaddrinfo ENOTFOUND')) {
             retry = retry || 0;
             if (++retry <= maxRetryCount) {
                 console.log(`    retry (${retry}/${maxRetryCount}) ...`);
@@ -180,6 +181,12 @@ query tags ($owner: String!, $repo: String!, PageVarDef) {
     refs(refPrefix: "refs/tags/", PageVar) {
       nodes {
         name
+        commit: target {
+          ... on Commit {
+            oid
+            pushedDate
+          }
+        }
       }
       PageRes
     }
@@ -196,7 +203,7 @@ query tags ($owner: String!, $repo: String!, PageVarDef) {
         }
         return repository.refs;
     });
-    res = res.map(x => x.name);
+    // res = res.map(x => x.name);
     return res;
 }
 

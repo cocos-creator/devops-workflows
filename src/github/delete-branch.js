@@ -2,7 +2,7 @@
 const chalk = require('chalk');
 
 const { Which, deleteBranch, hasBeenMergedTo, createTag, request, requestFromAllPages } = require('./github');
-const { getFireball, queryDependReposFromAllBranches, queryBranchesSortedByTime, fillBranchInfo } = require('./utils');
+const { getFireball, queryDependReposFromAllBranches, queryBranchesSortedByTime, fillBranchInfo, UNIQ_BRANCH_PREFIX } = require('./utils');
 require('../global-init');
 const utils = require('../utils');
 
@@ -46,7 +46,7 @@ function getTagName (name) {
 }
 
 function getUniqueTagName (name) {
-    return `deleted-branch-${name}`;
+    return UNIQ_BRANCH_PREFIX + name;
 }
 
 async function queryUnmergedPullRequests (which) {
@@ -218,7 +218,9 @@ async function processBranch (which) {
         const sha = branch.commit.oid;
         let created = await createTag(which, getTagName(which.branch), sha);
         if (!created) {
-            await createTag(which, getUniqueTagName(which.branch), sha);
+            let tempTag = getUniqueTagName(which.branch);
+            await createTag(which, tempTag, sha);
+            console.warn(chalk.yellow(`  Temporary created tag '${tempTag}' for '${which}'.`));
         }
         // check PRs
         let usedPRs = await queryUnmergedPullRequests(which);
