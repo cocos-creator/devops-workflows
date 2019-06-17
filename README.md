@@ -69,7 +69,7 @@ npm run download -- --url https://github.com/cocos-creator/hello-world/archive/v
 该命令会在所有仓库中创建新分支
 
 ```bash
-npm run new-branch -- oldBranch newBranch
+npm run new-branch -- oldBranchOrTag newBranch
 ```
 
 步骤如下

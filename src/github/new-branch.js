@@ -6,23 +6,24 @@ const { Which, querySha, createBranch, commit } = require('./github');
 const { getFireball, getMainPackage, parseDependRepos } = require('./utils');
 
 
-let baseBranch = process.argv[2];
+let baseRef = process.argv[2];
 let newBranch = process.argv[3];
 
-if (baseBranch === newBranch) {
-    console.log(`Invalid branches, they must be difference`);
+if (baseRef === newBranch) {
+    console.log(`Invalid references, param 1 should not identical with 2`);
     process.exit(0);
 }
 if (newBranch.endsWith('-release')) {
-    if (baseBranch + '-release' !== newBranch) {
-        console.warn(`Create release branch "${chalk.yellow(newBranch)}" from "${chalk.yellow(baseBranch)}"`);
+    if (baseRef + '-release' !== newBranch) {
+        // different version
+        console.warn(`Create release branch "${chalk.yellow(newBranch)}" from "${chalk.yellow(baseRef)}"`);
     }
     else {
-        console.log(`Create release branch "${newBranch}" from "${baseBranch}"`);
+        console.log(`Create release branch "${newBranch}" from "${baseRef}"`);
     }
 }
 else {
-    console.log(`Create normal branch "${newBranch}" from "${baseBranch}"`);
+    console.log(`Create normal branch "${newBranch}" from "${baseRef}"`);
 }
 
 
@@ -67,15 +68,23 @@ function bumpDependRepos (packageContent, packageJson) {
 
 (async function () {
 
-    let fireballBase = getFireball(baseBranch);
+    let fireballBase = getFireball(baseRef);
     let fireballNew = getFireball(newBranch);
 
     // create new fireball branch
 
+    let basedOnBranch = true;
     let sha = await querySha(fireballBase);
     if (!sha) {
-        throw `Can not find ref of ${fireballBase}`;
+        // ref is a tag
+        basedOnBranch = false;
+        fireballBase.branch = undefined;
+        sha = await querySha(fireballBase, baseRef);
+        if (!sha) {
+            throw `Can not find ref of ${fireballBase}`;
+        }
     }
+
     let created = await createBranch(fireballNew, sha);
     if (!created) {
         console.warn(chalk.yellow(`Branch (${fireballNew}) already exists. Parse dependencies based on new branch.`));
@@ -90,9 +99,19 @@ function bumpDependRepos (packageContent, packageJson) {
     // create depend branches
 
     for (let which of repos) {
-        let sha = await querySha(which);
-        if (!sha) {
-            throw `Can not find ref of ${which}, check the dependencies please.`;
+        let sha;
+        if (basedOnBranch) {
+            sha = await querySha(which);
+            if (!sha) {
+                throw `Can not find branch '${which}', check the dependencies please.`;
+            }
+        }
+        else {
+            which.branch = undefined;
+            sha = await querySha(which, baseRef);
+            if (!sha) {
+                throw `Can not find tag '${baseRef}' of ${which}, check the dependencies please.`;
+            }
         }
         which.branch = newBranch;
         let created = await createBranch(which, sha);
@@ -107,7 +126,7 @@ function bumpDependRepos (packageContent, packageJson) {
 
     // commit package.json
 
-    let commitMsg = `Switch dependencies to ${newBranch}`;
+    let commitMsg = `Switch all dependencies to ${newBranch}`;
     await commit(fireballNew, 'package.json', new Buffer(packageContent), commitMsg);
 
     console.log(`Finished create branch`);
