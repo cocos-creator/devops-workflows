@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "tag": "node src/github/tag",
+    "tag-local": "node src/tag",
     "upload": "node src/deploy upload",
     "download": "node src/download",
     "new-branch": "node src/github/new-branch",
