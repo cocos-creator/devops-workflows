@@ -1,5 +1,6 @@
 
 const chalk = require('chalk');
+const semver = require('semver');
 
 require('../global-init');
 const { Which, querySha, createBranch, commit } = require('./github');
@@ -27,11 +28,11 @@ else {
 }
 
 
-function bumpDependRepos (packageContent, packageJson) {
+function updatePackages (packageContent, packageJson) {
     const { builtin, hosts, templates, externDefs } = packageJson;
 
     // use replace to ensure line ending will not changed or it will be formated by JSON
-    function replace (oldText, newText) {
+    function ensureReplace (oldText, newText) {
         packageContent = packageContent.replace(oldText, newText);
         if (packageContent.includes(oldText)) {
             console.error(chalk.red(`Failed to update package.json, includes more than 1 ${oldText}`));
@@ -39,10 +40,19 @@ function bumpDependRepos (packageContent, packageJson) {
         }
     }
 
+    // bump self version
+    let sv = semver.parse(newBranch);
+    if (sv) {
+        let newVersion = `${sv.major}.${sv.minor}.${sv.patch}`;
+        if (newVersion !== packageJson.version) {
+            ensureReplace(`"version": "${packageJson.version}",`, `"version": "${newVersion}",`);
+        }
+    }
+
     function bumpRepos (repos) {
         return repos.map(entry => {
             let [repo, branch] = entry.split('#');
-            replace(`"${entry}"`, `"${repo}#${newBranch}"`);
+            ensureReplace(`"${entry}"`, `"${repo}#${newBranch}"`);
         });
     }
 
@@ -54,13 +64,13 @@ function bumpDependRepos (packageContent, packageJson) {
         let entry = Which.fromDownloadUrl(url);
         if (entry) {
             entry.branch = newBranch;
-            replace(url, entry.toDownloadUrl());
+            ensureReplace(url, entry.toDownloadUrl());
         }
     }
 
     if (externDefs) {
         let oldBranch = externDefs['cocos2d-x_branch'];
-        replace(`"cocos2d-x_branch": "${oldBranch}"`, `"cocos2d-x_branch": "${newBranch}"`);
+        ensureReplace(`"cocos2d-x_branch": "${oldBranch}"`, `"cocos2d-x_branch": "${newBranch}"`);
     }
 
     return packageContent;
@@ -122,7 +132,7 @@ function bumpDependRepos (packageContent, packageJson) {
 
     // update package.json
 
-    packageContent = bumpDependRepos(packageContent, packageJson);
+    packageContent = updatePackages(packageContent, packageJson);
 
     // commit package.json
 
