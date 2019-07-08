@@ -80,7 +80,7 @@ class DataToMarkdown extends DataToMarkdownBase {
         let repo = which.repo;
         let link = '';
         if (!pr.repository.isPrivate) {
-            link = `, Link: <code>[#${pr.number}]</code> <code>${pr.url}</code>`
+            link = `, Link: <code> [#${pr.number}]</code> <code>${pr.url}</code>`
         }
         text += `[${repo}] [${pr.title}](${pr.url})
 <blockquote>

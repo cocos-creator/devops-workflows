@@ -165,7 +165,7 @@ query branches ($owner: String!, $repo: String!, PageVarDef) {
     });
     // endTimer();
 
-    res = res.filter(x => x.name !== 'gh-pages');
+    res = res.filter(x => x.name !== 'gh-pages' && !RegExp(settings.creatorGithub.ignoreBranches).test(x.name));
     res.forEach(x => {
         let date = new Date(x.commit.pushedDate);
         x.updatedAt = date.getTime();

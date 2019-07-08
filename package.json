@@ -56,7 +56,8 @@
       "owner": "cocos-creator",
       "ownerPackages": "cocos-creator-packages",
       "storageRepo": "2d-tasks",
-      "tasksRepo": "2d-tasks"
+      "tasksRepo": "2d-tasks",
+      "ignoreBranches": "^3d\\b"
     },
     "usernames": {
       "jareguo": "郭佳伟"

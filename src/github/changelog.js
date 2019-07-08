@@ -193,6 +193,16 @@ async function deferredInit (output, toHTML) {
 async function getVersionTime (version) {
     let versions = await storage.get(StoragePath);
     let info = versions[version];
+    if (!info) {
+        let found = _(versions)
+            .toPairs()
+            .filter(x => x[0].startsWith(version))
+            .maxBy(x => x[1].utcTime);
+        if (found) {
+            console.warn(chalk.yellow(`Can not find version ${version}, choose ${found[0]} intead.`));
+            [version, info] = found;
+        }
+    }
     if (info) {
         let date = new Date(info.utcTime);
         if (!date.getTime()) {

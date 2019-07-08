@@ -81,7 +81,7 @@ async function queryPepo (which, baseBranches, output) {
                 }
             }
             else {
-                return true;
+                return !RegExp(settings.creatorGithub.ignoreBranches).test(x.baseRefName);
             }
         })
         .sortBy('baseRefName')
