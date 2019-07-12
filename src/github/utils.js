@@ -60,7 +60,7 @@ function getFireball (branch) {
     return new Which(settings.creatorGithub.owner, 'fireball', branch);
 }
 
-const VERSION_BRANCH_RE = /^v\d+\.\d+(\.\d+)?(?:-release)?$/i;
+const VERSION_BRANCH_RE = /^v\d+\.\d+(\.\d+)?(?:-release|-patch)?$/i;
 const SORT_ORDER = ['__SEMVER__', 'master', 'dev', 'develop', '__FEATURE__'];
 function fillBranchInfo (branch) {
     let name;

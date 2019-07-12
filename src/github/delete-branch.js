@@ -34,7 +34,7 @@ const program = require('commander');
     }
 })();
 
-const GET_VERSION_RE = /^v(\d+\.\d+(?:\.\d+)?)(?:-release)?$/i;
+const GET_VERSION_RE = /^v(\d+\.\d+(?:\.\d+)?)(?:-release|-patch)?$/i;
 function getTagName (name) {
     let match = GET_VERSION_RE.exec(name);
     if (match) {

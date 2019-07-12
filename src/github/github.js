@@ -29,7 +29,8 @@ const graphql = require('@octokit/graphql').defaults({
 //        https://octokit.github.io/rest.js/
 
 const Octokit = require('@octokit/rest')
-    .plugin(require('@octokit/plugin-throttling'));
+    .plugin(require('@octokit/plugin-throttling'))
+    .plugin(require('@octokit/plugin-retry'));
 const restClient = new Octokit({
     auth,
     userAgent: ua,
