@@ -104,21 +104,25 @@ async function requestFromAllPages (query, variables, getConnection) {
     return allNodes;
 }
 
-async function querySha (which, tag) {
+async function queryRef (which, branch, tag) {
     let variables = which.toJSON();
     if (tag) {
         variables.qualifiedName = `refs/tags/${tag}`;
-        console.log(`    querying sha of tag '${tag}' in '${which.owner}/${which.repo}'`);
+        console.log(`    querying ref of tag '${tag}' in '${which.owner}/${which.repo}'`);
     }
     else {
-        variables.qualifiedName = `refs/heads/${which.branch}`;
-        console.log(`    querying sha of '${which}'`);
+        variables.qualifiedName = `refs/heads/${branch}`;
+        console.log(`    querying ref of branch '${branch}' in '${which.owner}/${which.repo}'`);
     }
     let res = await request(`query ($owner: String!, $repo: String!, $qualifiedName: String!) {
   repository(owner: $owner, name: $repo) {
     ref (qualifiedName: $qualifiedName) {
-      target {
-        oid
+      name
+      commit: target {
+        ... on Commit {
+          oid
+          pushedDate
+        }
       }
     }
   }
@@ -126,11 +130,18 @@ async function querySha (which, tag) {
     if (!res) {
         throw `Failed to access ${which.owner}/${which.repo}`;
     }
-    if (!res.repository.ref) {
-        // ref does not exist
+    let ref = res.repository.ref;
+    if (!ref) {
         return null;
     }
-    return res.repository.ref.target.oid;
+    let date = new Date(ref.commit.pushedDate);
+    ref.updatedAt = date.getTime();
+    return ref;
+}
+
+async function querySha (which, tag) {
+    let ref = await queryRef(which, null, tag);
+    return ref && ref.commit.oid;
 }
 
 async function queryBranches (which) {
@@ -461,7 +472,7 @@ async function commit (which, path, buffer, message) {
     let content = buffer.toString('base64');
     let sha = await _queryBlob(which, path, 'oid');
 
-    let res = await restClient.repos.updateFile({
+    let res = await restClient.repos.createOrUpdateFile({
         owner: which.owner,
         repo: which.repo,
         branch: which.branch,
@@ -532,6 +543,7 @@ module.exports = {
     Which,
     request,
     requestFromAllPages,
+    queryRef,
     querySha,
     queryText,
     commit,

@@ -13,7 +13,8 @@
     "sync-branch": "node src/github/sync-branch",
     "delete-branch": "node src/github/delete-branch",
     "changelog": "node src/github/changelog",
-    "clean-issue": "node src/github/clean-issue"
+    "clean-issue": "node src/github/clean-issue",
+    "merge-branch": "node src/github/merge-branch"
   },
   "repository": {
     "type": "git",
