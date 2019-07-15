@@ -52,7 +52,9 @@ function updatePackages (packageContent, packageJson) {
     function bumpRepos (repos) {
         return repos.map(entry => {
             let [repo, branch] = entry.split('#');
-            ensureReplace(`"${entry}"`, `"${repo}#${newBranch}"`);
+            if (branch !== newBranch) {
+                ensureReplace(`"${entry}"`, `"${repo}#${newBranch}"`);
+            }
         });
     }
 
@@ -62,7 +64,7 @@ function updatePackages (packageContent, packageJson) {
     for (let key in templates) {
         let url = templates[key];
         let entry = Which.fromDownloadUrl(url);
-        if (entry) {
+        if (entry && entry.branch !== newBranch) {
             entry.branch = newBranch;
             ensureReplace(url, entry.toDownloadUrl());
         }
@@ -70,7 +72,9 @@ function updatePackages (packageContent, packageJson) {
 
     if (externDefs) {
         let oldBranch = externDefs['cocos2d-x_branch'];
-        ensureReplace(`"cocos2d-x_branch": "${oldBranch}"`, `"cocos2d-x_branch": "${newBranch}"`);
+        if (oldBranch !== newBranch) {
+            ensureReplace(`"cocos2d-x_branch": "${oldBranch}"`, `"cocos2d-x_branch": "${newBranch}"`);
+        }
     }
 
     return packageContent;
@@ -132,12 +136,16 @@ function updatePackages (packageContent, packageJson) {
 
     // update package.json
 
-    packageContent = updatePackages(packageContent, packageJson);
+    let newPackageContent = updatePackages(packageContent, packageJson);
+    if (newPackageContent !== packageContent) {
+        // commit package.json
 
-    // commit package.json
-
-    let commitMsg = `Switch all dependencies to ${newBranch}`;
-    await commit(fireballNew, 'package.json', new Buffer(packageContent), commitMsg);
+        let commitMsg = `Switch all dependencies to ${newBranch}`;
+        await commit(fireballNew, 'package.json', new Buffer(newPackageContent), commitMsg);
+    }
+    else {
+        console.log('Checked package.json, no need to update.');
+    }
 
     console.log(`Finished create branch`);
 })();
