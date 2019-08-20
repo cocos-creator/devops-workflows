@@ -140,7 +140,7 @@ async function queryRef (which, branch, tag) {
 }
 
 async function querySha (which, tag) {
-    let ref = await queryRef(which, null, tag);
+    let ref = await queryRef(which, tag || which.branch, tag);
     return ref && ref.commit.oid;
 }
 

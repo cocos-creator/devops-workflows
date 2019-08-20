@@ -33,10 +33,10 @@ console.log(info);
 
 function sortDevSemVersByVersion (semvers) {
     semvers.sort((lhs, rhs) => {
-        if (semver.gt(lhs, rhs)) {
+        if (semver.gt(lhs, rhs, { includePrerelease: true })) {
             return 1;
         }
-        else if (semver.lt(lhs, rhs)) {
+        else if (semver.lt(lhs, rhs, { includePrerelease: true })) {
             return -1;
         }
         else {

@@ -107,10 +107,10 @@ function compareBranchesByVersion (lhs, rhs) {
     }
     else if (lhs.semver && rhs.semver) {
         // both 0
-        if (semver.gt(lhs.semver, rhs.semver)) {
+        if (semver.gt(lhs.semver, rhs.semver, { includePrerelease: true })) {
             return 1;
         }
-        else if (semver.lt(lhs.semver, rhs.semver)) {
+        else if (semver.lt(lhs.semver, rhs.semver, { includePrerelease: true })) {
             return -1;
         }
         else if (lhs.name === rhs.name) {

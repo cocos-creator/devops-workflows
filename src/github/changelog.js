@@ -232,27 +232,29 @@ async function recordVersionTime () {
 async function getLastVersion (branch) {
     let branchInfo = fillBranchInfo(branch);
     var branchSemver = branchInfo.semver;
-    let range;
-    if (branchInfo.loose) {
-        // v0.0 or dev/master
-        range = new RegExp(`^${branchSemver.major}\\.${branchSemver.minor}\\.\\d+`);
-    }
-    else {
-        // v0.0.0
-        range = new RegExp(`^${branchSemver.major}\\.${branchSemver.minor}\\.${branchSemver.patch}\\b`);
-    }
-
     let latestVersion = null;
-    let latestTime = null;
-    let versions = await storage.get(StoragePath);
-    for (let version in versions) {
-        if (!range.test(version)) {
-            continue;
+    if (branchSemver) {
+        let range;
+        if (branchInfo.loose) {
+            // v0.0 or dev/master
+            range = new RegExp(`^${branchSemver.major}\\.${branchSemver.minor}\\.\\d+`);
         }
-        let time = versions[version].utcTime;
-        if (!latestVersion || time > latestTime) {
-            latestVersion = version;
-            latestTime = time;
+        else {
+            // v0.0.0
+            range = new RegExp(`^${branchSemver.major}\\.${branchSemver.minor}\\.${branchSemver.patch}\\b`);
+        }
+
+        let latestTime = null;
+        let versions = await storage.get(StoragePath);
+        for (let version in versions) {
+            if (!range.test(version)) {
+                continue;
+            }
+            let time = versions[version].utcTime;
+            if (!latestVersion || time > latestTime) {
+                latestVersion = version;
+                latestTime = time;
+            }
         }
     }
 
@@ -299,8 +301,7 @@ async function listChangelog () {
     }
     let info = [info1, info2].filter(Boolean).join('\n');
     console.log(info);
-    console.log(`You must ensure all version branches have been merged to '${program.branch}'`);
-    console.log(`  (Or run 'npm run sync-branch')`);
+    console.log(`You must ensure all version branches have been merged to '${program.branch} (By run 'npm run sync-branch').'`);
 
     // init streaming
 
