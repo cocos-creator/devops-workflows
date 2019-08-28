@@ -106,7 +106,6 @@ function compareBranchesByVersion (lhs, rhs) {
         return res;
     }
     else if (lhs.semver && rhs.semver) {
-        // both 0
         if (semver.gt(lhs.semver, rhs.semver, { includePrerelease: true })) {
             return 1;
         }
@@ -117,14 +116,13 @@ function compareBranchesByVersion (lhs, rhs) {
             return 0;
         }
         else if (rhs.name.endsWith('-release')) {
-            return -1;
+            return 1;
         }
         else {
-            return 1;
+            return -1;
         }
     }
     else {
-        // both -1
         return lhs.name.localeCompare(rhs.name);
     }
 }

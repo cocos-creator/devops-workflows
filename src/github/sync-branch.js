@@ -11,7 +11,25 @@ const settings = utils.getSettings();
 
 let syncRepos = process.argv.length > 2 ? process.argv.slice(2) : null;
 
-async function syncBranch (which, branches) {
+// checks if v1.0.0 not merged into v1.0.0-release
+function checkPrereleases(newBranch, oldBranch, which, results) {
+    let newSv = newBranch.semver;
+    let oldSv = oldBranch.semver;
+    if (!newSv || !oldSv) {
+        return;
+    }
+    if (newSv.major === oldSv.major && newSv.minor === oldSv.minor && newSv.patch === oldSv.patch) {
+        if (oldSv.prerelease === 'release' && newSv.prerelease !== oldSv.prerelease) {
+            results.notSyncedToRelease.push({
+                which,
+                oldBranch: oldBranch.name,
+                newBranch: newBranch.name,
+            });
+        }
+    }
+}
+
+async function syncBranch (which, branches, results) {
     if (!branches) {
         branches = await queryBranches(which);
         branches.forEach(fillBranchInfo);
@@ -42,8 +60,13 @@ async function syncBranch (which, branches) {
             else {
                 // identical, no need to merge
             }
+
+            checkPrereleases(newBranch, oldBranch, which, results);
+
             continue;
         }
+
+        checkPrereleases(newBranch, oldBranch, which, results);
 
         // try to merge directly
         const res = await mergeBranch(which, newBranchName, oldBranchName);
@@ -60,17 +83,17 @@ async function syncBranch (which, branches) {
             }
             else {
                 console.warn(`    Can’t automatically merge branches of '${which.repo}', from '${oldBranchName}' into '${newBranchName}'.`);
-                return {
+                results.conflicts.push({
                     which,
                     oldBranch: oldBranchName,
                     newBranch: newBranchName,
-                };
+                });
+                break;
             }
         }
     }
 
     endTimer();
-    return null;
 }
 
 (async function () {
@@ -90,19 +113,29 @@ async function syncBranch (which, branches) {
 
     let endTimer = utils.timer(`synchronize repos`);
     let promises = [];
+    let results = {
+        conflicts: [],
+        notSyncedToRelease: [],
+    };
     if (!syncRepos || syncRepos.includes(fireball.repo)) {
-        promises.push(syncBranch(fireball, branches));
+        promises.push(syncBranch(fireball, branches, results));
     }
-    promises = promises.concat(repos.map(x => syncBranch(x)));
-    let status = await Promise.all(promises);
+    promises = promises.concat(repos.map(x => syncBranch(x, null, results)));
+    await Promise.all(promises);
     endTimer();
 
     // output
 
-    status = status.filter(Boolean);
-    if (status.length > 0) {
+    if (results.notSyncedToRelease.length > 0) {
+        console.warn(chalk.yellow(`There are changes not merged into corresponding release branches, please check manually:`));
+        for (let info of results.notSyncedToRelease) {
+            console.warn(`  Repo: ${chalk.yellow(info.which)}, release branch: ${chalk.yellow(info.oldBranch)}, modified branch: ${chalk.yellow(info.newBranch)},\n` +
+            `    changes: ${chalk.yellow(info.which.url)}/compare/${chalk.yellow(info.oldBranch)}...${chalk.yellow(info.newBranch)}`);
+        }
+    }
+    if (results.conflicts.length > 0) {
         console.error(chalk.red(`There are merge conflicts, please manually merge these branches:`));
-        for (let info of status) {
+        for (let info of results.conflicts) {
             console.error(`  Repo: ${chalk.red(info.which)}, from: ${chalk.red(info.oldBranch)}, to: ${chalk.red(info.newBranch)}`);
         }
         process.exit(1);
