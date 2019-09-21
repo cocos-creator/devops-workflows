@@ -80,9 +80,9 @@ class DataToMarkdown extends DataToMarkdownBase {
         let repo = which.repo;
         let link = '';
         if (!pr.repository.isPrivate) {
-            link = `, Link: <code> [#${pr.number}]</code> <code>${pr.url}</code>`
+            link = `, PR Markdown: <code> \[\\\[#${pr.number}\\\]\](${pr.url})</code>`;
         }
-        text += `[${repo}] [${pr.title}](${pr.url})
+        text += `[${repo}] [\[#${pr.number}\]](${pr.url}) [${pr.title}](${pr.url})
 <blockquote>
 By: <code>${pr.author.name}</code>${link}<br>
 ${when(pr.bodyText, `<code>${pr.bodyText}</code>`)}
