@@ -117,10 +117,10 @@ async function queryPepo (which, from, to, output) {
         // Filter by branch
         let currentBranchInfo = fillBranchInfo(which.branch);
         prs = prs.filter(x => {
-            if (x.baseRefName === 'v2.0-release' || x.baseRefName === 'v2.0') {
-                // HACK: 临时处理特殊分支
-                return true;
-            }
+            // if (x.baseRefName === 'v2.2.1') {
+            //     // HACK: 临时处理已删除的分支
+            //     return true;
+            // }
             let prBranchInfo = fillBranchInfo(x.baseRefName);
             // console.log(which.branch + ' ' + x.baseRefName + ' ' + compareBranchesByVersion(currentBranchInfo, prBranchInfo));
             return compareBranchesByVersion(currentBranchInfo, prBranchInfo) >= 0;

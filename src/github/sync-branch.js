@@ -1,5 +1,4 @@
 
-const semver = require('semver');
 const chalk = require('chalk');
 const _ = require('lodash');
 
@@ -10,6 +9,7 @@ const utils = require('../utils');
 const settings = utils.getSettings();
 
 let syncRepos = process.argv.length > 2 ? process.argv.slice(2) : null;
+const skipBranches = ['v2.1.4-release'];
 
 // checks if v1.0.0 not merged into v1.0.0-release
 function checkPrereleases(newBranch, oldBranch, which, results) {
@@ -67,6 +67,12 @@ async function syncBranch (which, branches, results) {
         }
 
         checkPrereleases(newBranch, oldBranch, which, results);
+
+        // skip branch
+        if (skipBranches.includes(oldBranchName)) {
+            console.log(chalk.yellow(`    Skip merging from '${oldBranchName}' into '${newBranchName}'.`));
+            continue;
+        }
 
         // try to merge directly
         const res = await mergeBranch(which, newBranchName, oldBranchName);

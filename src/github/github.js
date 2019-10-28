@@ -62,7 +62,8 @@ async function request (cmd, variables, retry) {
     }
     catch (e) {
         console.error(`  ${e.message}. Status: ${e.status}.`);
-        if (e.message.includes('ETIMEDOUT') || e.message.includes('network timeout at') ||
+        if (e.message.includes('ETIMEDOUT') ||
+            e.message.includes(' timeout ') ||
             e.message.includes('getaddrinfo ENOTFOUND')) {
             retry = retry || 0;
             if (++retry <= maxRetryCount) {
