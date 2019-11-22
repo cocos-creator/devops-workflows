@@ -61,7 +61,7 @@ function updatePackages (packageContent, packageJson) {
 
     function bumpDocRepo (doc) {
         let [repo, branch] = doc.split('#');
-        let docNewBranch = /v[0-9].[0-9]/.exec(newBranch)[0];
+        let docNewBranch = /v[0-9].[0-9]+/.exec(newBranch)[0];
         if (branch !== docNewBranch) {
             ensureReplace(`"${doc}"`, `"${repo}#${docNewBranch}"`);
         }
