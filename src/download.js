@@ -7,6 +7,7 @@ const globby = require('globby');
 const fse = require('fs-extra');
 const program = require('commander');
 const Chalk = require('chalk');
+const ProgressBar = require('progress');
 
 const { getSettings, tooltip, sleep } = require('./utils');
 const unzip = require('./unzip');
@@ -45,7 +46,27 @@ async function download(url, dir, retryTimes = 5) {
     }
 
     try {
-        await Download(url, dir, args);
+        var bar = new ProgressBar('[  downloaded: :downloaded MB speed: :speed KB/S lasting: :last ]', { 
+            incomplete: ' ',
+            width: 40,
+            total: 100 
+        });
+        var lastBytes = 0;
+        var total = 0;
+        var duration = 0;
+        var timer = setInterval(() => {
+            var delta = total - lastBytes;
+            lastBytes = total;
+            var speed = (delta / 1024).toFixed(2);
+            duration++;
+            bar.render({downloaded: (total / 1048576).toFixed(2), speed: speed, last: Math.floor(duration / 60) + ' min ' + duration % 60 + ' s'});
+        }, 1000);
+
+        await Download(url, dir, args).on('downloadProgress', progress => {
+            total = progress.transferred;
+        });
+        
+        clearInterval(timer);
     }
     catch (err) {
         if (err.statusCode !== 404) {

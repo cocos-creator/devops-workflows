@@ -9,7 +9,7 @@ const utils = require('../utils');
 const settings = utils.getSettings();
 
 let syncRepos = process.argv.length > 2 ? process.argv.slice(2) : null;
-const skipBranches = ['v2.1.4-release'];
+const skipBranches = [];
 
 // checks if v1.0.0 not merged into v1.0.0-release
 function checkPrereleases(newBranch, oldBranch, which, results) {

@@ -51,6 +51,7 @@ function updatePackages (packageContent, packageJson) {
 
     function bumpRepos (repos) {
         return repos.map(entry => {
+            if (!entry.includes('#')) return;
             let [repo, branch] = entry.split('#');
             if (branch !== newBranch) {
                 ensureReplace(`"${entry}"`, `"${repo}#${newBranch}"`);
