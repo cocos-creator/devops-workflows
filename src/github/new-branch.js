@@ -29,7 +29,7 @@ else {
 
 
 function updatePackages (packageContent, packageJson) {
-    const { builtin, hosts, templates, externDefs } = packageJson;
+    const { builtin, hosts, templates, externDefs, apiDocs } = packageJson;
 
     // use replace to ensure line ending will not changed or it will be formated by JSON
     function ensureReplace (oldText, newText) {
@@ -59,9 +59,18 @@ function updatePackages (packageContent, packageJson) {
         });
     }
 
+    function bumpDocRepo (doc) {
+        let [repo, branch] = doc.split('#');
+        let docNewBranch = /v[0-9].[0-9]+/.exec(newBranch)[0];
+        if (branch !== docNewBranch) {
+            ensureReplace(`"${doc}"`, `"${repo}#${docNewBranch}"`);
+        }
+    }
+ 
     bumpRepos(builtin);
     bumpRepos(hosts);
     bumpRepos(templates);
+    bumpDocRepo(apiDocs)
 
     for (let key in templates) {
         let url = templates[key];
