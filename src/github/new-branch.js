@@ -61,7 +61,7 @@ function updatePackages (packageContent, packageJson) {
 
     bumpRepos(builtin);
     bumpRepos(hosts);
-    bumpRepos(templates);
+    bumpRepos(Object.values(templates));
 
     for (let key in templates) {
         let url = templates[key];
