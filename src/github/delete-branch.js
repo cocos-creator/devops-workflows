@@ -186,10 +186,7 @@ async function changeBaseRefOfPullRequests (which, prs, newBase) {
         };
         for (let pr of prs) {
             variables.input.pullRequestId = pr.id;
-            variables.input.body = `@${pr.author.login}, **${which.branch}** branch will be deleted, so we edited the base branch to **${newBase}**, or this PR will be killed by GitHub.
-Please review the commits history to ensure that the PR does not polluted by unneeded commits from your origin branch.
-If you need to merge to other branch, you can first click the **Edit** button on the right side of the PR title, then switch the **base** branch.
-If necessary, welcome to resubmit a new PR. Thanks!`;
+            variables.input.body = `We switched this PR to **${newBase}** because **${which.branch}** is about to be deleted.`;
             await request(mutation, variables);
         }
         endTimer();
