@@ -44,7 +44,7 @@ async function download(url, dir, retryTimes = 5) {
     if (!proxy) {
         args.agent = null;     // 强制禁用 proxy 参数，否则会读取到 npm 设置的参数，导致无法下载内网资源
     }
-
+    var timer = null;
     try {
         var bar = new ProgressBar('[  downloaded: :downloaded MB speed: :speed KB/S lasting: :last ]', { 
             incomplete: ' ',
@@ -54,7 +54,7 @@ async function download(url, dir, retryTimes = 5) {
         var lastBytes = 0;
         var total = 0;
         var duration = 0;
-        var timer = setInterval(() => {
+        timer = setInterval(() => {
             var delta = total - lastBytes;
             lastBytes = total;
             var speed = (delta / 1024).toFixed(2);
@@ -69,6 +69,7 @@ async function download(url, dir, retryTimes = 5) {
         clearInterval(timer);
     }
     catch (err) {
+        clearInterval(timer);
         if (err.statusCode !== 404) {
             if (err.code === 'ECONNRESET' && proxy) {
                 // proxy error
