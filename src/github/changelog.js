@@ -301,7 +301,7 @@ async function listChangelog () {
     }
     let info = [info1, info2].filter(Boolean).join('\n');
     console.log(info);
-    console.log(`You must ensure all version branches have been merged to '${program.branch} (By run 'npm run sync-branch').'`);
+    console.log(`You must ensure all version branches have been merged to '${program.branch} (By running 'npm run sync-branch').'`);
 
     // init streaming
 

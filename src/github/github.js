@@ -62,11 +62,12 @@ async function request (cmd, variables, retry) {
     }
     catch (e) {
         console.error(`  ${e.message}. Status: ${e.status}.`);
-        if (e.message.includes('ETIMEDOUT') ||
+        if (e.message.includes('ETIMEDOUT') || e.message.includes('ECONNREFUSED') ||
             e.message.includes(' timeout ') ||
             e.message.includes('getaddrinfo ENOTFOUND')) {
             retry = retry || 0;
             if (++retry <= maxRetryCount) {
+                await utils.sleep(1000);
                 console.log(`    retry (${retry}/${maxRetryCount}) ...`);
                 return request(cmd, variables, retry);
             }
@@ -78,7 +79,7 @@ async function request (cmd, variables, retry) {
 }
 
 async function requestFromAllPages (query, variables, getConnection) {
-    const ITEM_PER_PAGE = 50;
+    const ITEM_PER_PAGE = 100;
 
     let allNodes = [];
 
@@ -90,7 +91,7 @@ async function requestFromAllPages (query, variables, getConnection) {
     variables.first = ITEM_PER_PAGE;
     variables.after = undefined;
 
-    for (;;) {
+    for (let next = 1;; ++next) {
         let res = await request(query, variables);
         let { nodes, pageInfo: { hasNextPage, endCursor } } = getConnection(res);
         allNodes = allNodes.concat(nodes);
@@ -98,10 +99,14 @@ async function requestFromAllPages (query, variables, getConnection) {
         if (!hasNextPage) {
             break;
         }
-        console.log(`    querying next page...`);
+        console.log(`    querying page ${next} ...`);
         variables.after = endCursor;
     }
 
+    console.log(`    total count: ${allNodes.length}`);
+    if (allNodes.length === 1000) {
+        console.warn(`    probably exceeded GitHub's limit, use the range syntax \`n..n\` to search for values within a range`);
+    }
     return allNodes;
 }
 
@@ -110,12 +115,42 @@ async function queryRef (which, branch, tag) {
     if (tag) {
         variables.qualifiedName = `refs/tags/${tag}`;
         console.log(`    querying ref of tag '${tag}' in '${which.owner}/${which.repo}'`);
+
+        let res = await request(`query ($owner: String!, $repo: String!, $qualifiedName: String!) {
+  repository(owner: $owner, name: $repo) {
+    name
+    ref (qualifiedName: $qualifiedName) {
+      name
+      target {
+        ... on Tag {
+          commit: target {
+            ... on Commit {
+              oid
+              pushedDate
+            }  
+          }
+        }
+      }
+    }
+  }
+}`, variables);
+        if (!res) {
+            throw `Failed to access ${which.owner}/${which.repo}`;
+        }
+        let ref = res.repository.ref;
+        if (!ref) {
+            console.warn(`      Failed!`);
+            return null;
+        }
+        let date = new Date(ref.target.commit.pushedDate);
+        ref.updatedAt = date.getTime();
+        return ref;
     }
     else {
         variables.qualifiedName = `refs/heads/${branch}`;
         console.log(`    querying ref of branch '${branch}' in '${which.owner}/${which.repo}'`);
-    }
-    let res = await request(`query ($owner: String!, $repo: String!, $qualifiedName: String!) {
+
+        let res = await request(`query ($owner: String!, $repo: String!, $qualifiedName: String!) {
   repository(owner: $owner, name: $repo) {
     ref (qualifiedName: $qualifiedName) {
       name
@@ -128,16 +163,18 @@ async function queryRef (which, branch, tag) {
     }
   }
 }`, variables);
-    if (!res) {
-        throw `Failed to access ${which.owner}/${which.repo}`;
+        if (!res) {
+            throw `Failed to access ${which.owner}/${which.repo}`;
+        }
+        let ref = res.repository.ref;
+        if (!ref) {
+            console.warn(`      Failed!`);
+            return null;
+        }
+        let date = new Date(ref.commit.pushedDate);
+        ref.updatedAt = date.getTime();
+        return ref;
     }
-    let ref = res.repository.ref;
-    if (!ref) {
-        return null;
-    }
-    let date = new Date(ref.commit.pushedDate);
-    ref.updatedAt = date.getTime();
-    return ref;
 }
 
 async function querySha (which, tag) {
