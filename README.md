@@ -184,3 +184,13 @@ npm run tag tagName branch [repo]
  - 如果 tagName 是一个 semver，并且以 "-xxx" 结尾，则 "-xxx" 将统一替换为 "-dev"，并且清除除了最新 5 个版本以外的所有以 "-dev" 结尾的 semver 的 tag。
  - branch 用于指定当前要在哪个分支上创建 tag。
  - 如果指定 repo，将只会给该 repo 更新 tag。repo 的格式为 "owner/name"，如 "cocos-creator/cocos2d-x-lite"。
+
+**5D**
+
+```bash
+npm run list-5d-pr -- command tag
+```
+
+用于列举 2D、3D 合并需要迁移的 PR，将判断主版本到指定 tag 之间的差异，调用前需要更新主版本到最新。
+对于 fireball 仓库，会以 fireball 的 tag 为起始时间，对于其它仓库则以 engine 仓库。
+该命令会以 PR 为单位收集改动列表，结果将保存到本地。具体命令请参考源码。
