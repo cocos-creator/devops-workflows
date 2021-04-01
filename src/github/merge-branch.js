@@ -61,8 +61,8 @@ async function processRepo (which) {
     if (merged) {
         console.assert(merged === head);
 
-        let moveTo = head.newCommitSha || head.commit.oid;
-        if (base.commit.oid !== moveTo) {
+        let moveTo = head.newCommitSha || head.target.oid;
+        if (base.target.oid !== moveTo) {
             console.log(`  Fast-forward on '${which.repo}', '${baseName}' -> '${headName}'`);
             base.newCommitSha = moveTo;
             await updateBranch(new Which(which.owner, which.repo, baseName), moveTo);

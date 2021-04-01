@@ -112,50 +112,36 @@ async function requestFromAllPages (query, variables, getConnection) {
 
 async function queryRef (which, branch, tag) {
     let variables = which.toJSON();
+    let res;
     if (tag) {
         variables.qualifiedName = `refs/tags/${tag}`;
         console.log(`    querying ref of tag '${tag}' in '${which.owner}/${which.repo}'`);
 
-            let res = await request(`query ($owner: String!, $repo: String!, $qualifiedName: String!) {
+        res = await request(`query ($owner: String!, $repo: String!, $qualifiedName: String!) {
       repository(owner: $owner, name: $repo) {
         name
         ref (qualifiedName: $qualifiedName) {
           name
           target {
-            ... on Tag {
-              commit: target {
-                ... on Commit {
-                  oid
-                  pushedDate
-                  committedDate
-                }
-              }
+            ... on Commit {
+              oid
+              pushedDate
+              committedDate
             }
           }
         }
       }
     }`, variables);
-        if (!res) {
-            throw `Failed to access ${which.owner}/${which.repo}`;
-        }
-        let ref = res.repository.ref;
-        if (!ref) {
-            console.warn(`      Failed!`);
-            return null;
-        }
-        let date = new Date(ref.target.commit.pushedDate || ref.target.commit.committedDate);
-        ref.updatedAt = date.getTime();
-        return ref;
     }
     else {
         variables.qualifiedName = `refs/heads/${branch}`;
         console.log(`    querying ref of branch '${branch}' in '${which.owner}/${which.repo}'`);
 
-        let res = await request(`query ($owner: String!, $repo: String!, $qualifiedName: String!) {
+        res = await request(`query ($owner: String!, $repo: String!, $qualifiedName: String!) {
   repository(owner: $owner, name: $repo) {
     ref (qualifiedName: $qualifiedName) {
       name
-      commit: target {
+      target {
         ... on Commit {
           oid
           pushedDate
@@ -164,23 +150,23 @@ async function queryRef (which, branch, tag) {
     }
   }
 }`, variables);
-        if (!res) {
-            throw `Failed to access ${which.owner}/${which.repo}`;
-        }
-        let ref = res.repository.ref;
-        if (!ref) {
-            console.warn(`      Failed!`);
-            return null;
-        }
-        let date = new Date(ref.commit.pushedDate || ref.commit.committedDate);
-        ref.updatedAt = date.getTime();
-        return ref;
     }
+    if (!res) {
+        throw `Failed to access ${which.owner}/${which.repo}`;
+    }
+    let ref = res.repository.ref;
+    if (!ref) {
+        console.warn(`      Failed!`);
+        return null;
+    }
+    let date = new Date(ref.target.pushedDate || ref.target.committedDate);
+    ref.updatedAt = date.getTime();
+    return ref;
 }
 
 async function querySha (which, tag) {
     let ref = await queryRef(which, tag || which.branch, tag);
-    return ref && ref.commit.oid;
+    return ref && ref.target.oid;
 }
 
 async function queryBranches (which) {
