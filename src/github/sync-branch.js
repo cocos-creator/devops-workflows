@@ -9,7 +9,9 @@ const utils = require('../utils');
 const settings = utils.getSettings();
 
 let syncRepos = process.argv.length > 2 ? process.argv.slice(2) : null;
-const skipBranches = [];
+
+// 符合命名的分支，不会再合并到其它分支里
+const LeafBranches = [];
 
 // checks if v1.0.0 not merged into v1.0.0-release
 function checkPrereleases(newBranch, oldBranch, which, results) {
@@ -46,6 +48,17 @@ async function syncBranch (which, branches, results) {
         let oldBranchName = oldBranch.name;
         let newBranchName = newBranch.name;
 
+        // skip branch
+        if (LeafBranches.includes(oldBranchName)) {
+            console.log(chalk.yellow(`    Skip merging from '${oldBranchName}' into '${newBranchName}'.`));
+            continue;
+        }
+        if (oldBranch.type === 'lts' && newBranch.type === 'current') {
+            // 2.x 无法合并到 3.x
+            console.log(chalk.yellow(`    Skip merging from '${oldBranchName}' into '${newBranchName}'.`));
+            continue;
+        }
+
         // reverse compare branch to check whether it is possible to fast-forward
         let merged = await hasBeenMergedTo(which, newBranch, [oldBranch]);
         if (merged) {
@@ -68,12 +81,6 @@ async function syncBranch (which, branches, results) {
 
         checkPrereleases(newBranch, oldBranch, which, results);
 
-        // skip branch
-        if (skipBranches.includes(oldBranchName)) {
-            console.log(chalk.yellow(`    Skip merging from '${oldBranchName}' into '${newBranchName}'.`));
-            continue;
-        }
-
         // try to merge directly
         const res = await mergeBranch(which, newBranchName, oldBranchName);
         if (res.status === mergeBranch.Merged) {
@@ -82,8 +89,10 @@ async function syncBranch (which, branches, results) {
         }
         else if (res.status === mergeBranch.Conflict) {
             // checks if merged to newer branches
-            let newBranches = branches.slice(i + 2);
-            let mergedTo = await hasBeenMergedTo(which, oldBranch, newBranches);
+            let newerBranches = branches.slice(i + 2);    // 对比后续的分支
+            let invalidBranchIndex = newerBranches.findIndex(x => (oldBranch.type === 'lts' && x.type === 'current'));
+            newerBranches = newerBranches.slice(0, invalidBranchIndex);  // 2.x 无法合并到 3.x，后续的分支都不用判断了，包括 master 啥的
+            let mergedTo = await hasBeenMergedTo(which, oldBranch, newerBranches);
             if (mergedTo) {
                 console.log(`    '${which.repo}/${oldBranchName}' has previously been merged into '${mergedTo.name}', cancel merge to '${newBranchName}'.`);
             }

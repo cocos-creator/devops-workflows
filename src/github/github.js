@@ -145,6 +145,7 @@ async function queryRef (which, branch, tag) {
         ... on Commit {
           oid
           pushedDate
+          committedDate
         }
       }
     }

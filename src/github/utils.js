@@ -44,7 +44,7 @@ function parseDependRepos (package) {
     }
 
     // cocos2d-x-lite
-    let cocos2dx = new Which(owner, 'cocos2d-x-lite');
+    let cocos2dx = new Which(owner, 'engine-native');
     if (externDefs) {
         cocos2dx.branch = externDefs['cocos2d-x_branch'];
     }
@@ -84,16 +84,24 @@ function fillBranchInfo (branch) {
             branch.loose = false;
         }
         branch.isMainChannel = true;
-        branch.mainChannelOrder = SORT_ORDER.indexOf('__SEMVER__');
+        branch.majorSortOrder = SORT_ORDER.indexOf('__SEMVER__');
+        if (branch.semver.major < 3) {
+            branch.type = 'lts';
+        }
+        else {
+            branch.type = 'current';
+        }
     }
     else {
         let index = SORT_ORDER.indexOf(name);
         branch.isMainChannel = index !== -1;
         if (branch.isMainChannel) {
-            branch.mainChannelOrder = index;
+            branch.majorSortOrder = index;
+            branch.type = 'main';
         }
         else {
-            branch.mainChannelOrder = SORT_ORDER.indexOf('__FEATURE__');
+            branch.majorSortOrder = SORT_ORDER.indexOf('__FEATURE__');
+            branch.type = 'feature';
         }
         branch.loose = true;
     }
@@ -101,7 +109,7 @@ function fillBranchInfo (branch) {
 }
 
 function compareBranchesByVersion (lhs, rhs) {
-    let res = lhs.mainChannelOrder - rhs.mainChannelOrder;
+    let res = lhs.majorSortOrder - rhs.majorSortOrder;
     if (res !== 0) {
         return res;
     }

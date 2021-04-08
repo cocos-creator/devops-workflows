@@ -332,7 +332,7 @@ async function collectPRs (tag) {
     }
     if (jsbTag) {
         let jsbStartTime = new Date(jsbTag.updatedAt);
-        let lite = repos.find(x => x.repo === 'cocos2d-x-lite');
+        let lite = repos.find(x => x.repo === 'engine-native');
         lite.startTime = jsb.startTime = jsbStartTime;
         console.log(`native starts from ${jsbStartTime.toLocaleString('zh-cn')}`);
     }
