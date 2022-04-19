@@ -276,6 +276,7 @@ async function updateBranch (which, sha) {
 }
 
 async function _createRef (which, ref, sha) {
+    /** 
     try {
         let res = await restClient.git.createRef({
             owner: which.owner,
@@ -296,21 +297,24 @@ async function _createRef (which, ref, sha) {
             throw e;
         }
     }
+    */
+   console.log("_createRef" + ref + sha);
     return true;
 }
 
 async function createBranch (which, sha) {
     console.log(`  creating branch ${which}`);
-    return _createRef(which, `refs/heads/${which.branch}`, sha);
+    //return _createRef(which, `refs/heads/${which.branch}`, sha);
 }
 
 async function createTag (which, name, sha) {
     console.log(`  creating tag ${name} in ${which.repo}`);
-    return _createRef(which, `refs/tags/${name}`, sha);
+    //return _createRef(which, `refs/tags/${name}`, sha);
 }
 
 async function mergeBranch (which, base, head) {
-    // console.log(`merging branch of ${which.owner}/${which.repo}/${head} into ${base}`);
+    console.log(`merging branch of ${which.owner}/${which.repo}/${head} into ${base}`);
+    /**
     try {
         const res = await restClient.repos.merge({
             owner: which.owner,
@@ -344,6 +348,7 @@ async function mergeBranch (which, base, head) {
         }
         throw e;
     }
+    **/    
 }
 
 mergeBranch.Merged = new Object();
@@ -383,6 +388,8 @@ async function compareBranches (which, base, head) {
 
 // 直接删除分支，不做任何检查
 async function deleteBranch (which) {
+    console.log(`  deleteBranch in ${which.owner}/${which.repo}`);
+    /**
     try {
         await restClient.git.deleteRef({
             owner: which.owner,
@@ -398,11 +405,13 @@ async function deleteBranch (which) {
         }
         throw e;
     }
+    **/
 }
 
 // 直接删除 Tag，不做任何检查
 async function deleteTag (which, tag) {
     console.log(`  deleting tag ${tag} in ${which.owner}/${which.repo}`);
+    /**
     try {
         await restClient.git.deleteRef({
             owner: which.owner,
@@ -416,6 +425,7 @@ async function deleteTag (which, tag) {
         }
         throw e;
     }
+    **/
 }
 
 async function findResLimit (array, runTask, test, limit) {
@@ -494,7 +504,7 @@ async function queryText (which, path) {
 // https://developer.github.com/v3/repos/contents/#update-a-file
 async function commit (which, path, buffer, message) {
     console.log(`committing content to ${which}: ${path}`);
-
+    /**
     let content = buffer.toString('base64');
     let sha = await _queryBlob(which, path, 'oid');
 
@@ -507,6 +517,7 @@ async function commit (which, path, buffer, message) {
         content,
         sha,
     });
+    */
 
     console.log(`committed: ${res.data.commit.html_url}`);
 }

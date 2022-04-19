@@ -5,15 +5,16 @@ const semver = require('semver');
 
 const ghCssPath = require.resolve('github-markdown-css');
 const clipboardPath = require.resolve('clipboard/dist/clipboard.min.js');
-const { readFileSync } = require('fs-extra');
+const { readFileSync, fsyncSync } = require('fs-extra');
 
 const utils = require('../utils');
 const settings = utils.getSettings();
 const { Which, request, queryText, queryBranches } = require('./github');
+const download = require('download');
 
 async function getMainPackage (which) {
-    console.log('  querying package.json from ' + which);
-    return queryText(which, 'package.json');
+    console.log('  querying depend repo from ');
+    return queryText(which, settings.creatorGithub.depend);
 }
 
 // get repos from package.json {
@@ -21,43 +22,25 @@ async function getMainPackage (which) {
 //   hosts
 //   templates (github.com)
 // }
-function parseDependRepos (package) {
-    const { builtin, hosts, templates, externDefs } = package;
-    const { creatorGithub: { owner, ownerPackages} } = settings;
-
-    function parseRepos (repos, owner) {
-        return repos.map(entry => {
-            let [repo, branch] = entry.split('#');
-            return new Which(owner, repo, branch);
-        });
-    }
+function parseDependRepos (package, branch) {
+    const { creatorGithub: { owner} } = settings;
     let repos = [];
-    repos = repos.concat(parseRepos(builtin, ownerPackages));
-    repos = repos.concat(parseRepos(hosts, owner));
-
-    for (let key in templates) {
-        let url = templates[key];
-        let entry = Which.fromDownloadUrl(url);
-        if (entry) {
-            repos.push(entry);
+    
+    for (var key in package) { 
+        if (package[key]['workflow'] == true) {
+            repoName = package[key]['https']['github'].split('/')[4].split('.')[0]
+            //console.log("仓库名：" + repoName);
+            let temp_repo = new Which(owner, repoName, branch);
+            repos.push(temp_repo);
         }
     }
 
-    // cocos2d-x-lite
-    let cocos2dx = new Which(owner, 'engine-native');
-    if (externDefs) {
-        cocos2dx.branch = externDefs['cocos2d-x_branch'];
-    }
-    else {
-        // ignore old branch
-    }
-    repos.push(cocos2dx);
-
-    return repos;
+    return repos
 }
 
 function getFireball (branch) {
-    return new Which(settings.creatorGithub.owner, 'fireball', branch);
+    //return new Which(settings.creatorGithub.owner, 'fireball', branch);
+    return new Which(settings.creatorGithub.owner, settings.creatorGithub.editor, branch);
 }
 
 const VERSION_BRANCH_RE = /^v\d+\.\d+(\.\d+)?(?:-release|-patch)?$/i;
@@ -173,7 +156,9 @@ async function queryDependReposFromAllBranches () {
         let which = new Which(fireball.owner, fireball.repo, x);
         return getMainPackage(which);
     }));
-    let repos = packages.map(x => parseDependRepos(JSON.parse(x)));
+    
+    let repos = packages.map(x => parseDependRepos(JSON.parse(x), x));
+
     repos = _.uniqBy(_.flatten(repos), x => {
         x.branch = null;    // just compare repos, ignore the differences in those branches
         return String(x);
@@ -323,6 +308,13 @@ class MarkdownToHTML extends Transform {
         //     let id = `copy${++this._ids}`;
         //     return `<code id="${id}" data-clipboard-target="#${id}">`;
         // });
+        // 写入文件
+        //var fs = require('fs');
+        //fs.writeFile('./out.md', content, { 'flag': 'a' }, function(err) {
+        //    if (err) {
+        //        throw err;
+        //    }
+        //});
         return content;
     }
 }
