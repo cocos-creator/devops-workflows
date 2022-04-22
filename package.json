@@ -6,8 +6,6 @@
   "scripts": {
     "tag": "node src/github/tag",
     "tag-local": "node src/tag",
-    "upload": "node src/deploy upload",
-    "download": "node src/download",
     "new-branch": "node src/github/new-branch",
     "list-pr": "node src/github/list-pr",
     "list-5d": "node src/github/list-5d",
@@ -19,14 +17,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cocos-creator/workflows.git"
+    "url": "git+https://github.com/cocos-creator/devops-workflows.git"
   },
   "author": "CocosCreator",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/cocos-creator/workflows/issues"
+    "url": "https://github.com/cocos-creator/devops-workflows/issues"
   },
-  "homepage": "https://github.com/cocos-creator/workflows#readme",
+  "homepage": "https://github.com/cocos-creator/devops-workflows#readme",
   "dependencies": {
     "@octokit/graphql": "^2.1.1",
     "@octokit/plugin-retry": "^2.2.0",
@@ -52,16 +50,18 @@
   "workflows_settings": {
     "paths": {
       "fireball": "../fireball",
-      "cocos2d-x-lite": "../cocos2d-x-lite"
+      "cocos2d-x-lite": "../cocos2d-x-lite",
+      "cocos-engine": "../cocos-engine",
+      "engine-native": "../engine-native"
     },
     "httpProxies": [],
     "creatorGithub": {
       "token": "",
-      "owner": "cocos-creator",
+      "owner": "cocos",
       "ownerPackages": "cocos-creator-packages",
-      "storageRepo": "2d-tasks",
-      "tasksRepo": "2d-tasks",
-      "ignoreBranches": "^3d\\b"
+      "storageRepo": "3d-tasks",
+      "tasksRepo": "3d-tasks",
+      "ignoreBranches": "^2d\\b"
     },
     "usernames": {
       "jareguo": "郭佳伟"
