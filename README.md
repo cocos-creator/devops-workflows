@@ -36,29 +36,6 @@ If you need, place your settings in `settings.js` to overwrite the default setti
 
 ## Commands
 
-**Deploy Product**
-
-该命令会将文件上传到 FTP
-
-```bash
-npm run upload -- path/to/file --dest TestBuilds/xxx.zip --user Admin --password 123456 --host 127.0.0.1
-```
-
-如果希望在上传前先从 FTP 移除和目标文件版本号相同，只是补丁版本不同的相同文件，可以在最后加上一个参数 --archieve-same-version
-
-```bash
-npm run upload -- ....  --archieve-same-version
-```
-
-这样一来相关文件就会被移动到 ../Histroy 目录中。
-
-**Download**
-
-该命令会将文件下载到指定位置，并且解压
-
-```bash
-npm run download -- --url https://github.com/cocos-creator/hello-world/archive/v1.10.zip --dir ./test
-```
 
 **Tag Local**
 
