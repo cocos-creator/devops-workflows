@@ -5,7 +5,7 @@ const semver = require('semver');
 
 const ghCssPath = require.resolve('github-markdown-css');
 const clipboardPath = require.resolve('clipboard/dist/clipboard.min.js');
-const { readFileSync, fsyncSync } = require('fs-extra');
+const { readFileSync } = require('fs-extra');
 
 const utils = require('../utils');
 const settings = utils.getSettings();
@@ -304,17 +304,6 @@ class MarkdownToHTML extends Transform {
 
     _renderMarkdown (text) {
         let content = this.converter.makeHtml(text);
-        // content = content.replace(COPY_ELEMENT_RE, () => {
-        //     let id = `copy${++this._ids}`;
-        //     return `<code id="${id}" data-clipboard-target="#${id}">`;
-        // });
-        // 写入文件
-        //var fs = require('fs');
-        //fs.writeFile('./out.md', content, { 'flag': 'a' }, function(err) {
-        //    if (err) {
-        //        throw err;
-        //    }
-        //});
         return content;
     }
 }
