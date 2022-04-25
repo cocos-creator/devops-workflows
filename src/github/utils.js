@@ -10,7 +10,6 @@ const { readFileSync } = require('fs-extra');
 const utils = require('../utils');
 const settings = utils.getSettings();
 const { Which, request, queryText, queryBranches } = require('./github');
-const download = require('download');
 
 async function getMainPackage (which) {
     console.log('  querying depend repo from ');
