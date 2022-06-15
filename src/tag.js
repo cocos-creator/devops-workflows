@@ -9,7 +9,7 @@ const { promisify } = require('util');
 const utils = require('./utils');
 const git = require('./git');
 
-const remote = 'fireball';
+const remote = 'cocos-editor';
 
 program
     .option('--path <path>', 'Specify the path of the editor or cocos-engine repo')
