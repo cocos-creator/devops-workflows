@@ -41,6 +41,7 @@
     "ftp": "^0.3.10",
     "github-markdown-css": "^3.0.1",
     "globby": "^8.0.1",
+    "gulp": "^4.0.2",
     "lodash": "^4.17.19",
     "progress": "^2.0.3",
     "semver": "^6.3.0",
@@ -50,17 +51,19 @@
   "workflows_settings": {
     "paths": {
       "fireball": "../fireball",
-      "editor": "../editor",
+      "editor": "../cocos-editor",
       "cocos-engine": "../cocos-engine",
       "engine-native": "../engine-native"
     },
-    "httpProxies": ["http://127.0.0.1:1080"],
+    "httpProxies": [
+      "http://127.0.0.1:1080"
+    ],
     "creatorGithub": {
       "token": "",
       "owner": "cocos",
       "ownerPackages": "cocos-creator-packages",
       "editor": "cocos-editor",
-      "depend": "repo.json",      
+      "depend": "repo.json",
       "storageRepo": "3d-tasks",
       "tasksRepo": "3d-tasks",
       "ignoreBranches": "^2d\\b"
