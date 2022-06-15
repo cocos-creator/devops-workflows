@@ -76,7 +76,7 @@ function doTagFireballRepo (path, tagName, callback) {
 }
 
 function tagSpecifiedRepo (path) {
-    const pkg = require(join(path, 'repo.json'));
+    const pkg = require(join(path, 'package.json'));
     // get tag name
     let tagName = pkg.version;
     console.log(`add tag [${tagName}] on ${path}`);
@@ -97,7 +97,7 @@ function tagConfigedRepo () {
     const settings = utils.getSettings();
     const fireball = settings.paths.editor;
     // get tag name
-    const pkg = require(join(fireball, 'repo.json'));
+    const pkg = require(join(fireball, 'package.json'));
     let tagName = pkg.version;
     console.log(`add tag [${tagName}] on configured ${fireball}`);
 

@@ -49,7 +49,7 @@ npm run tag-local
 npm run tag-local -- --path path/to/repo
 ```
 
-此命令将会根据指定路径下的 repo.json 中的 version 来打 tag，并且推送到 cocos-creator 远端仓库。如果是 cocos-editor 仓库，还会同步依赖的 repo（不含 cocos2d-x-lite）。
+此命令将会根据指定路径下的 package.json 中的 version 来打 tag，并且推送到 cocos-creator 远端仓库。如果是 cocos-editor 仓库，还会同步依赖的 repo（不含 cocos2d-x-lite）。
 
 ### GitHub Commands
 
