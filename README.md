@@ -43,7 +43,7 @@ If you need, place your settings in `settings.js` to overwrite the default setti
 npm run tag-local
 ```
 
-此命令将会根据 cocos-editor 下的 repo.json 中的 version，自动给所有依赖的 repo 打上 tag，并且推送到 cocos-creator 远端仓库。
+此命令将会根据 cocos-editor 下的 package.json 中的 version，自动给所有依赖的 repo 打上 tag，并且推送到 cocos-creator 远端仓库。
 
 ```bash
 npm run tag-local -- --path path/to/repo
