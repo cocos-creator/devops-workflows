@@ -12,7 +12,7 @@ const git = require('./git');
 const remote = 'fireball';
 
 program
-    .option('--path <path>', 'Specify the path of the fireball or cocos2d-x-lite repo')
+    .option('--path <path>', 'Specify the path of the editor or cocos-engine repo')
     .parse(process.argv);
 
 function addRepoTag (tag, path, callback) {
@@ -76,7 +76,7 @@ function doTagFireballRepo (path, tagName, callback) {
 }
 
 function tagSpecifiedRepo (path) {
-    const pkg = require(join(path, 'package.json'));
+    const pkg = require(join(path, 'repo.json'));
     // get tag name
     let tagName = pkg.version;
     console.log(`add tag [${tagName}] on ${path}`);
@@ -84,7 +84,7 @@ function tagSpecifiedRepo (path) {
     if (pkg.name === 'CocosCreator') {
         doTagFireballRepo(path, tagName);
     }
-    else if (pkg.name === 'cocos2d-x-lite') {
+    else if (pkg.name === 'cocos-engine') {
         addRepoTag(tagName, path);
     }
     else {
@@ -95,9 +95,9 @@ function tagSpecifiedRepo (path) {
 function tagConfigedRepo () {
     // get path from settings
     const settings = utils.getSettings();
-    const fireball = settings.paths.fireball;
+    const fireball = settings.paths.editor;
     // get tag name
-    const pkg = require(join(fireball, 'package.json'));
+    const pkg = require(join(fireball, 'repo.json'));
     let tagName = pkg.version;
     console.log(`add tag [${tagName}] on configured ${fireball}`);
 
@@ -106,9 +106,9 @@ function tagConfigedRepo () {
         next => {
             doTagFireballRepo(fireball, tagName, next);
         },
-        // working on cocos2d-x-lite
+        // working on cocos-engine
         next => {
-            addRepoTag(tagName, settings.paths['cocos2d-x-lite'], next);
+            addRepoTag(tagName, settings.paths['cocos-engine'], next);
         }
     ]);
 }
