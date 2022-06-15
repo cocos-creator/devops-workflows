@@ -12,7 +12,7 @@ const git = require('./git');
 const remote = 'fireball';
 
 program
-    .option('--path <path>', 'Specify the path of the fireball or cocos2d-x-lite repo')
+    .option('--path <path>', 'Specify the path of the editor or cocos-engine repo')
     .parse(process.argv);
 
 function addRepoTag (tag, path, callback) {
@@ -76,7 +76,7 @@ function doTagFireballRepo (path, tagName, callback) {
 }
 
 function tagSpecifiedRepo (path) {
-    const pkg = require(join(path, 'package.json'));
+    const pkg = require(join(path, 'repo.json'));
     // get tag name
     let tagName = pkg.version;
     console.log(`add tag [${tagName}] on ${path}`);
