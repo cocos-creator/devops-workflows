@@ -122,7 +122,7 @@ npm run merge-branch -- -b baseBranch -h headBranch
 npm run delete-branch -- branch [subsequentBranch] [--df] [--du]
 ```
 
-该命令会删除 GitHub 仓库上的指定分支，需要同步的仓库将从 cocos-editor 最新若干个分支中的 package.json 收集而来。
+该命令会删除 GitHub 仓库上的指定分支，需要同步的仓库将从 cocos-editor 最新若干个分支中的 repo.json 收集而来。
  - '--df' 命令用于强制删除功能分支
  - '--du' 命令用于强制删除未合并的分支
 
