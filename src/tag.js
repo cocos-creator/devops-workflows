@@ -84,7 +84,7 @@ function tagSpecifiedRepo (path) {
     if (pkg.name === 'CocosCreator') {
         doTagFireballRepo(path, tagName);
     }
-    else if (pkg.name === 'cocos2d-x-lite') {
+    else if (pkg.name === 'cocos-engine') {
         addRepoTag(tagName, path);
     }
     else {
