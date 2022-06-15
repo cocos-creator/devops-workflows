@@ -148,7 +148,7 @@ async function processRepo (which, tag) {
 
 (async function () {
     if (oneRepo) {
-        await processRepo(new Which(oneRepo), tagName);
+        await processRepo(new Which(oneRepo + "/" + whichBranch), tagName);
     }
     else {
         let fireball = getFireball(whichBranch);

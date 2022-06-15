@@ -43,17 +43,17 @@ If you need, place your settings in `settings.js` to overwrite the default setti
 npm run tag-local
 ```
 
-此命令将会根据 fireball 下的 package.json 中的 version，自动给所有依赖的 repo（含 cocos2d-x-lite）打上 tag，并且推送到 cocos-creator 远端仓库。
+此命令将会根据 cocos-editor 下的 repo.json 中的 version，自动给所有依赖的 repo 打上 tag，并且推送到 cocos-creator 远端仓库。
 
 ```bash
 npm run tag-local -- --path path/to/repo
 ```
 
-此命令将会根据指定路径下的 package.json 中的 version 来打 tag，并且推送到 cocos-creator 远端仓库。如果是 fireball 仓库，还会同步依赖的 repo（不含 cocos2d-x-lite）。
+此命令将会根据指定路径下的 repo.json 中的 version 来打 tag，并且推送到 cocos-creator 远端仓库。如果是 cocos-editor 仓库，还会同步依赖的 repo（不含 cocos2d-x-lite）。
 
 ### GitHub Commands
 
-以下命令全程操作都通过 GitHub API 远程进行，不会影响到本地 git 仓库。所有操作会批量在 fireball 主仓库、2d-x 仓库和 22 个子仓库中进行。
+以下命令全程操作都通过 GitHub API 远程进行，不会影响到本地 git 仓库。所有操作会批量在 cocos-editor 主仓库、以及 cocos-editor 仓库中 repo.json 文件里设置  workflow 值为 true 的相关仓库。
 
 **New Branch**
 
@@ -67,7 +67,7 @@ npm run new-branch -- oldBranchOrTag newBranch
 
  - 遍历所有仓库
    - 创建新分支
- - 更新 package.json 中的依赖分支并且提交到主仓库的新分支上
+ - 更新 repo.json 中的依赖分支并且提交到主仓库的新分支上
 
 **List PR**
 
@@ -105,8 +105,8 @@ npm run clean-issue
 npm run sync-branch [...repos]
 ```
 
-该命令会自动同步所有 GitHub 上的所有开发分支（按版本顺序依次合并改动），需要同步的仓库将从 fireball 最新若干个分支中的 package.json 收集而来。
- - repos 允许指定只同步哪些仓库。以空格隔开，如 `npm run sync-branch fireball engine`
+该命令会自动同步所有 GitHub 上的所有开发分支（按版本顺序依次合并改动），需要同步的仓库将从 cocos-editor 最新若干个分支中的 repo.json 收集而来。
+ - repos 允许指定只同步哪些仓库。以空格隔开，如 `npm run sync-branch ocos-editor cocos-engine`
 
 **Merge Branch**
 
@@ -122,7 +122,7 @@ npm run merge-branch -- -b baseBranch -h headBranch
 npm run delete-branch -- branch [subsequentBranch] [--df] [--du]
 ```
 
-该命令会删除 GitHub 仓库上的指定分支，需要同步的仓库将从 fireball 最新若干个分支中的 package.json 收集而来。
+该命令会删除 GitHub 仓库上的指定分支，需要同步的仓库将从 cocos-editor 最新若干个分支中的 package.json 收集而来。
  - '--df' 命令用于强制删除功能分支
  - '--du' 命令用于强制删除未合并的分支
 
@@ -160,7 +160,7 @@ npm run tag tagName branch [repo]
 此命令用于给所有仓库打上 tag。
  - 如果 tagName 是一个 semver，并且以 "-xxx" 结尾，则 "-xxx" 将统一替换为 "-dev"，并且清除除了最新 5 个版本以外的所有以 "-dev" 结尾的 semver 的 tag。
  - branch 用于指定当前要在哪个分支上创建 tag。
- - 如果指定 repo，将只会给该 repo 更新 tag。repo 的格式为 "owner/name"，如 "cocos-creator/cocos2d-x-lite"。
+ - 如果指定 repo，将只会给该 repo 更新 tag。repo 的格式为 "owner/name"，如 "cocos/cocos-engine"。
 
 **5D**
 
@@ -169,5 +169,5 @@ npm run list-5d-pr -- command tag
 ```
 
 用于列举 2D、3D 合并需要迁移的 PR，将判断主版本到指定 tag 之间的差异，调用前需要更新主版本到最新。
-对于 fireball 仓库，会以 fireball 的 tag 为起始时间，对于其它仓库则以 engine 仓库。
+对于 cocos-editor 仓库，会以 cocos-editor 的 tag 为起始时间，对于其它仓库则以 cocos-engine 仓库。
 该命令会以 PR 为单位收集改动列表，结果将保存到本地。具体命令请参考源码。

@@ -50,15 +50,17 @@
   "workflows_settings": {
     "paths": {
       "fireball": "../fireball",
-      "cocos2d-x-lite": "../cocos2d-x-lite",
+      "editor": "../editor",
       "cocos-engine": "../cocos-engine",
       "engine-native": "../engine-native"
     },
-    "httpProxies": [],
+    "httpProxies": ["http://127.0.0.1:1080"],
     "creatorGithub": {
       "token": "",
       "owner": "cocos",
       "ownerPackages": "cocos-creator-packages",
+      "editor": "cocos-editor",
+      "depend": "repo.json",      
       "storageRepo": "3d-tasks",
       "tasksRepo": "3d-tasks",
       "ignoreBranches": "^2d\\b"
