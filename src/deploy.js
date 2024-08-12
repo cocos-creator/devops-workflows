@@ -23,13 +23,15 @@ function getFilesToArchieve (list, myFile) {
     let matches = myFile.match(LHS_PatchVerAndDate_RHS);
     if (matches) {
         let myLHS = matches[1];
+        let myVer = matches[2]
         let myRHS = matches[3];
         return list.filter(x => {
             let matches = x.match(LHS_PatchVerAndDate_RHS);
             if (matches) {
                 let lhs = matches[1];
+                let ver = matches[2];
                 let rhs = matches[3];
-                return (lhs === myLHS && rhs === myRHS);
+                return (lhs === myLHS && ver === myVer && rhs === myRHS);
             }
             else {
                 return false;
@@ -45,6 +47,9 @@ async function upload2Ftp(localPath, options, callback) {
     let remotePath = options.dest;
     if (!isAbsolute(remotePath)) {
         remotePath = '/' + remotePath;
+    }
+    if (process.platform === 'win32') {
+        remotePath = remotePath.replace(/\\/g, '/');
     }
     let remoteDir = dirname(remotePath);
     let client = new ftp();
@@ -73,7 +78,10 @@ async function upload2Ftp(localPath, options, callback) {
                 let oldFile = sameVersionFiles[i];
                 let oldPath = join(remoteDir, oldFile);
                 let newPath = join(remoteDir, '..', 'Histroy', oldFile);
-
+                if (process.platform === 'win32') {
+                    oldPath = oldPath.replace(/\\/g, '/');
+                    newPath = newPath.replace(/\\/g, '/');
+                }
                 console.log(`move ${oldPath} to ${newPath}`);
                 try {
                     await promisify(client.delete.bind(client))(newPath);
